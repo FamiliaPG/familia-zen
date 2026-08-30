@@ -202,6 +202,46 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 .muro i{width:26px;height:26px;border-radius:8px;animation:pop .4s both}
 .wall-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
 
+/* jardín zen */
+#garden-scene{position:relative;width:100%;aspect-ratio:10/7;max-height:560px;border-radius:var(--r-lg);overflow:hidden;background:linear-gradient(180deg,var(--g-sky1) 0%,var(--g-sky2) 46%,var(--g-ground) 46.2%,var(--g-ground2) 100%);box-shadow:var(--shadow-lg);user-select:none;touch-action:manipulation}
+#garden-scene svg.scenery{position:absolute;inset:0;width:100%;height:100%}
+.g-sun{position:absolute;width:16%;aspect-ratio:1;left:8%;top:6%;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff8 0 18%,transparent 60%),var(--g-sun);box-shadow:0 0 60px 22px var(--g-sunglow);animation:sunpulse 7s ease-in-out infinite}
+.g-sun::after{content:"";position:absolute;inset:-42%;border-radius:50%;background:conic-gradient(from 0deg,var(--g-sunray) 0 4deg,transparent 4deg 30deg,var(--g-sunray) 30deg 34deg,transparent 34deg 60deg,var(--g-sunray) 60deg 64deg,transparent 64deg 90deg,var(--g-sunray) 90deg 94deg,transparent 94deg 120deg,var(--g-sunray) 120deg 124deg,transparent 124deg 150deg,var(--g-sunray) 150deg 154deg,transparent 154deg 180deg,var(--g-sunray) 180deg 184deg,transparent 184deg 210deg,var(--g-sunray) 210deg 214deg,transparent 214deg 240deg,var(--g-sunray) 240deg 244deg,transparent 244deg 270deg,var(--g-sunray) 270deg 274deg,transparent 274deg 300deg,var(--g-sunray) 300deg 304deg,transparent 304deg 330deg,var(--g-sunray) 330deg 334deg,transparent 334deg 360deg);animation:sunspin 60s linear infinite;opacity:.5}
+@keyframes sunspin{to{transform:rotate(360deg)}}
+@keyframes sunpulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+.g-cloud{position:absolute;height:7%;aspect-ratio:3/1;background:var(--g-cloud);border-radius:99px;filter:blur(1px);opacity:.9;animation:clouddrift linear infinite}
+.g-cloud::before,.g-cloud::after{content:"";position:absolute;background:inherit;border-radius:50%}
+.g-cloud::before{width:45%;height:160%;left:14%;top:-70%}
+.g-cloud::after{width:34%;height:120%;right:16%;top:-42%}
+@keyframes clouddrift{from{transform:translateX(-30vw)}to{transform:translateX(110vw)}}
+.g-star{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;animation:twinkle 3s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.25}50%{opacity:1}}
+.g-part{position:absolute;top:-6%;font-size:13px;pointer-events:none;animation:falldrift linear infinite;opacity:.85}
+@keyframes falldrift{0%{transform:translate(0,-4vh) rotate(0)}100%{transform:translate(-9vw,80vh) rotate(320deg)}}
+.g-rain{position:absolute;top:-10%;width:1.5px;height:16px;background:linear-gradient(#fff0,#cfe3f7cc);pointer-events:none;animation:raindrop .9s linear infinite}
+@keyframes raindrop{to{transform:translateY(88vh)}}
+.g-firefly{position:absolute;width:5px;height:5px;border-radius:50%;background:#ffe97a;box-shadow:0 0 8px 3px #ffe97a88;pointer-events:none;animation:fly 6s ease-in-out infinite}
+@keyframes fly{0%,100%{transform:translate(0,0);opacity:.2}25%{transform:translate(14px,-16px);opacity:1}50%{transform:translate(-8px,-30px);opacity:.4}75%{transform:translate(10px,-10px);opacity:1}}
+.g-koi{position:absolute;font-size:12px;animation:koiswim 9s ease-in-out infinite;pointer-events:none}
+@keyframes koiswim{0%,100%{transform:translate(0,0) rotate(0) scaleX(1)}45%{transform:translate(26px,7px) rotate(14deg) scaleX(1)}50%{transform:translate(26px,7px) rotate(14deg) scaleX(-1)}95%{transform:translate(0,0) rotate(0) scaleX(-1)}}
+.g-area{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;z-index:5;padding:10px}
+.g-area .dot{width:11px;height:11px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px #ffffff33,0 0 12px 2px #ffffff55;animation:areapulse 3s ease-in-out infinite}
+@keyframes areapulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+.g-area .lbl{font-size:.58rem;font-weight:700;letter-spacing:.04em;color:#fff;background:#00000042;padding:2px 8px;border-radius:99px;backdrop-filter:blur(3px);white-space:nowrap}
+.g-area:hover .dot{background:var(--kin-bright)}
+.g-char{position:absolute;transform:translate(-50%,-92%);display:flex;flex-direction:column;align-items:center;z-index:10;transition:left 1.6s cubic-bezier(.45,.05,.35,1),top 1.6s cubic-bezier(.45,.05,.35,1);pointer-events:none}
+.g-char .fig{font-size:46px;line-height:1;animation:idlebob 3.2s ease-in-out infinite;filter:drop-shadow(0 3px 4px #0005);transform-origin:50% 100%}
+.g-char.walking .fig{animation:hopwalk .45s ease-in-out infinite}
+.g-char .gshadow{width:36px;height:9px;border-radius:50%;background:#00000038;margin-top:-4px;animation:shadowbob 3.2s ease-in-out infinite}
+.g-char .tag{margin-top:3px;font-size:.6rem;font-weight:700;color:#fff;background:#00000055;border:1.5px solid transparent;padding:1.5px 8px;border-radius:99px;backdrop-filter:blur(3px);white-space:nowrap}
+.g-char.me .tag{border-color:var(--kin-bright);background:#00000075}
+.g-char.me::before{content:"▼";position:absolute;top:-19px;font-size:11px;color:var(--kin-bright);animation:idlebob 1.6s ease-in-out infinite}
+@keyframes idlebob{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-5px) scale(.985,1.02)}}
+@keyframes shadowbob{0%,100%{transform:scaleX(1);opacity:.75}50%{transform:scaleX(.82);opacity:.5}}
+@keyframes hopwalk{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-11px) rotate(3deg)}}
+#garden-scene .heat{position:absolute;inset:0;pointer-events:none;background:var(--g-tint);mix-blend-mode:soft-light}
+.g-weather{position:absolute;top:10px;right:12px;z-index:20;font-size:.72rem;font-weight:700;color:#fff;background:#00000048;padding:4px 11px;border-radius:99px;backdrop-filter:blur(4px)}
+@media (prefers-reduced-motion: reduce){#garden-scene *{animation:none !important}}
 /* misc */
 .banner{border-radius:var(--r-sm);padding:10px 14px;font-size:.86rem;font-weight:600;background:var(--kin-wash);color:var(--kin);border:1px solid color-mix(in srgb,var(--kin) 30%,transparent)}
 .banner.info{background:var(--verde-wash);color:var(--verde-ink);border-color:color-mix(in srgb,var(--verde) 25%,transparent)}
@@ -597,6 +637,7 @@ function deriveState(events,now){
   const evs=[...events].sort((a,b)=>a.t-b.t||(a.id<b.id?-1:1));
   const todayK=dkey(new Date(now));
   const D={fam:null,members:new Map(),goals:new Map(),acts:new Map(),perM:new Map(),weeks:new Map(),weekKeys:[],famStreak:0,famStreakMax:0,now,todayK,intents:[]};
+  const gardenPos=new Map();D.garden=gardenPos;
   const kudos=[],sponsors=[],voids=new Set(),voidBy=new Map(),seals=new Map(),repairs=[],rests=new Map(),hards=new Map();
   /* --- fase A: estáticos --- */
   for(const e of evs){switch(e.type){
@@ -617,6 +658,7 @@ function deriveState(events,now){
     case 'act.min': {const a=D.acts.get(e.aid);if(a&&!a.done){a.tier='T1';if(e.title)a.title=e.title}break}
     case 'act.cancel': {const a=D.acts.get(e.aid);if(a&&!a.done)a.canceled=true;break}
     case 'act.done': {const a=D.acts.get(e.aid);if(a&&!a.done)a.done={t:e.t,kpi:e.kpi??null,note:e.note||'',evId:e.id};break}
+    case 'garden.move': gardenPos.set(e.m,String(e.area||'').slice(0,20));break;
     case 'day.rest': {const s=rests.get(e.m)||new Set();s.add(e.date);rests.set(e.m,s);break}
     case 'day.hard': {const mm=hards.get(e.m)||new Map();mm.set(e.date,e.note||'');hards.set(e.m,mm);break}
     case 'kudo': kudos.push(e);break;
@@ -998,9 +1040,10 @@ const ICONS={
   cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="16" rx="3.5"/><path d="M3.5 10h17M8 2.8V6.5M16 2.8V6.5"/><circle cx="8.5" cy="14.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
   metas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>',
   liga:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 0 1-12 0z"/><path d="M6 6H3.5a2.5 2.5 0 0 0 2.6 4M18 6h2.5a2.5 2.5 0 0 1-2.6 4"/></svg>',
+  jardin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 21v-6M12 15c0-3.5-2.5-6-6-6 0 3.5 2.5 6 6 6zM12 15c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z"/><path d="M12 9c1.8-1.5 2-4 0-6-2 2-1.8 4.5 0 6z"/><path d="M4 21h16"/></svg>',
   guia:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 6.5C10 4.8 7.3 4.3 4 4.5v13.8c3.3-.2 6 .3 8 2 2-1.7 4.7-2.2 8-2V4.5c-3.3-.2-6 .3-8 2z"/><path d="M12 6.5v13.8"/></svg>',
 };
-const TABS=[['hoy','Hoy'],['cal','Agenda'],['metas','Metas'],['liga','Liga'],['guia','Guía']];
+const TABS=[['hoy','Hoy'],['cal','Agenda'],['metas','Metas'],['liga','Liga'],['jardin','Jardín'],['guia','Guía']];
 function avatarHtml(m,size=40,ringPct=null){
   const fs=size*.52;
   let ring='';
@@ -1078,7 +1121,7 @@ function rerender(){
   if(!SESSION||!d.members.get(SESSION)){top.hidden=true;tab.hidden=true;renderLogin(main);return}
   top.hidden=false;tab.hidden=false;
   renderTopbar(top,d);renderTabbar(tab);
-  const R={hoy:renderHoy,cal:renderCal,metas:renderMetas,liga:renderLiga,guia:renderGuia,perfil:renderPerfil}[VIEW]||renderHoy;
+  const R={hoy:renderHoy,cal:renderCal,metas:renderMetas,liga:renderLiga,jardin:renderJardin,guia:renderGuia,perfil:renderPerfil}[VIEW]||renderHoy;
   R(main,d);
 }
 function closeModalsSafe(){/* los modales sobreviven a rerender solo si están marcados sticky */
@@ -1856,6 +1899,149 @@ function officialTable(wrec,d){
     </div>
     ${wrec.famMet?`<p class="banner info" style="margin-top:10px">🏮 Meta familiar cumplida: +${CONFIG.FAM_XP} XP para cada uno</p>`:''}
   </div>`;
+}
+/* ---------- VISTA: JARDÍN ZEN ---------- */
+const GAREAS=[
+ {id:'torii',n:'Puerta Torii',x:76,y:46},
+ {id:'cerezo',n:'El Cerezo',x:16,y:55},
+ {id:'colina',n:'Colina del Sol',x:36,y:33},
+ {id:'farol',n:'Farol de Piedra',x:52,y:49},
+ {id:'bambu',n:'Bambú',x:90,y:58},
+ {id:'puente',n:'El Puente',x:47,y:60},
+ {id:'estanque',n:'Estanque Koi',x:26,y:70},
+ {id:'arena',n:'Jardín de Arena',x:68,y:74},
+ {id:'te',n:'Casa de Té',x:88,y:84},
+ {id:'musgo',n:'Rocas de Musgo',x:10,y:86},
+];
+const GMOODS={
+ hot:  {sky1:'#ffd98a',sky2:'#ffb46b',ground:'#9fb75c',ground2:'#6f9648',sun:'#ffdd55',sunglow:'#ffb84599',sunray:'#ffdf7d55',cloud:'#fff3dd',pond1:'#7fb9c9',tint:'#ff9d4d33',parts:'🍃'},
+ warm: {sky1:'#9fd8f2',sky2:'#cdeef8',ground:'#8fbf62',ground2:'#5f9b4a',sun:'#ffd94d',sunglow:'#ffd94d77',sunray:'#ffe89a55',cloud:'#ffffff',pond1:'#6fb4d9',tint:'#ffffff00',parts:'🌸'},
+ mild: {sky1:'#b3d9ea',sky2:'#e2f1ec',ground:'#93b46a',ground2:'#6a944f',sun:'#ffe27a',sunglow:'#ffe27a55',sunray:'#fff0b355',cloud:'#ffffff',pond1:'#79aecb',tint:'#eaf5e622',parts:'🌸'},
+ cool: {sky1:'#a9c2d6',sky2:'#e8e2d0',ground:'#b09a55',ground2:'#8a7a42',sun:'#ffe9a3',sunglow:'#ffe9a344',sunray:'#fff3c444',cloud:'#f2eee4',pond1:'#7d9fb5',tint:'#d9903f22',parts:'🍂'},
+ cold: {sky1:'#c3d3e2',sky2:'#eef3f7',ground:'#dfe8ec',ground2:'#bccdd6',sun:'#fff3cf',sunglow:'#fff3cf33',sunray:'#ffffff33',cloud:'#ffffff',pond1:'#9dbdd2',tint:'#bcd8ee33',parts:'❄️'},
+ night:{sky1:'#0e1a33',sky2:'#233457',ground:'#2c4436',ground2:'#1d3026',sun:'#f4f1de',sunglow:'#f4f1de44',sunray:'#f4f1de22',cloud:'#43536e',pond1:'#2e4d63',tint:'#0a173044',parts:''},
+};
+let GWX=null;
+async function gardenWeather(){
+  try{const c=JSON.parse(localStorage.getItem('fz-wx')||'null');
+    if(c&&Date.now()-c.t<18e5){GWX=c.d;return GWX}}catch(e){}
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=40.71&longitude=-74.01&current=temperature_2m,weather_code,is_day&temperature_unit=fahrenheit');
+    const j=await r.json();
+    GWX={temp:Math.round(j.current.temperature_2m),code:j.current.weather_code,day:j.current.is_day===1};
+    try{localStorage.setItem('fz-wx',JSON.stringify({t:Date.now(),d:GWX}))}catch(e){}
+  }catch(e){GWX=null}
+  return GWX;
+}
+function gardenMood(w){
+  if(!w)return {mood:'warm',rain:false,snow:false,cloudy:false,label:'costa este 🌤'};
+  const rain=(w.code>=51&&w.code<=67)||(w.code>=80&&w.code<=82)||w.code>=95;
+  const snow=(w.code>=71&&w.code<=77)||w.code===85||w.code===86;
+  const cloudy=w.code===3||w.code===45||w.code===48||rain;
+  let mood=!w.day?'night':w.temp>=85?'hot':w.temp>=65?'warm':w.temp>=50?'mild':w.temp>=35?'cool':'cold';
+  const icon=!w.day?'🌙':snow?'🌨':rain?'🌧':cloudy?'☁️':w.temp>=85?'🔥':'☀️';
+  return {mood,rain,snow,cloudy,label:`NYC ${w.temp}°F ${icon}`};
+}
+function renderJardin(main,d){
+  const m=me();
+  const myArea=(d.garden&&d.garden.get(m.id))||GAREAS[[...d.members.keys()].indexOf(m.id)%GAREAS.length].id;
+  const mx=gardenMood(GWX);
+  const M=GMOODS[mx.mood];
+  // agrupación por área con abanico
+  const byArea={};
+  [...d.members.values()].forEach((mm,i)=>{
+    let a=(d.garden&&d.garden.get(mm.id))||GAREAS[i%GAREAS.length].id;
+    if(!GAREAS.some(g=>g.id===a))a=GAREAS[0].id;
+    (byArea[a]=byArea[a]||[]).push(mm);
+  });
+  const charHtml=[...d.members.values()].map((mm,i)=>{
+    let aid=(d.garden&&d.garden.get(mm.id))||GAREAS[i%GAREAS.length].id;
+    if(!GAREAS.some(g=>g.id===aid))aid=GAREAS[0].id;
+    const g=GAREAS.find(x=>x.id===aid);
+    const sibs=byArea[aid],k=sibs.indexOf(mm);
+    const off=(k-(sibs.length-1)/2)*7;
+    return `<div class="g-char ${mm.id===m.id?'me':''}" data-gc="${mm.id}" style="left:${g.x+off}%;top:${g.y}%">
+      <span class="fig" style="animation-delay:${(i*0.6)%3}s">${esc(mm.emoji)}</span>
+      <span class="gshadow" style="animation-delay:${(i*0.6)%3}s"></span>
+      <span class="tag">${esc(mm.name)}${mm.id===m.id?' · tú':''}</span></div>`;
+  }).join('');
+  const night=mx.mood==='night';
+  main.innerHTML=`<div class="vgap">
+    <div class="row between"><h1 style="font-size:1.35rem">Jardín Zen 🪷</h1>
+      <span class="tiny muted">toca un lugar para pasear</span></div>
+    <div id="garden-scene" style="--g-sky1:${M.sky1};--g-sky2:${M.sky2};--g-ground:${M.ground};--g-ground2:${M.ground2};--g-sun:${M.sun};--g-sunglow:${M.sunglow};--g-sunray:${M.sunray};--g-cloud:${M.cloud};--g-pond1:${M.pond1};--g-tint:${M.tint}">
+      ${night?[...Array(26)].map((_,i)=>`<span class="g-star" style="left:${(i*137)%100}%;top:${(i*73)%42}%;animation-delay:${(i%7)*.4}s"></span>`).join(''):''}
+      <div class="g-sun" style="${night?'box-shadow:0 0 40px 10px #f4f1de33;':''}"></div>
+      <div class="g-cloud" style="top:9%;left:30%;width:22%;animation-duration:90s"></div>
+      <div class="g-cloud" style="top:18%;left:60%;width:16%;animation-duration:130s;animation-delay:-40s"></div>
+      <svg class="scenery" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true">
+        <ellipse cx="240" cy="345" rx="420" ry="140" fill="${M.ground2}" opacity=".55"/>
+        <ellipse cx="820" cy="360" rx="460" ry="150" fill="${M.ground2}" opacity=".4"/>
+        <ellipse cx="330" cy="330" rx="260" ry="105" fill="${M.ground}"/>
+        <g opacity="${night?'.7':'1'}">
+          <rect x="718" y="175" width="14" height="120" rx="4" fill="#b3402e"/><rect x="798" y="175" width="14" height="120" rx="4" fill="#b3402e"/>
+          <rect x="700" y="168" width="130" height="15" rx="7" fill="#c74b35"/><rect x="708" y="196" width="114" height="10" rx="5" fill="#c74b35"/>
+          <rect x="694" y="156" width="142" height="13" rx="6" fill="#8f3122"/>
+        </g>
+        <g>
+          <rect x="118" y="255" width="16" height="90" rx="5" fill="#6d4a33"/>
+          <circle cx="105" cy="235" r="46" fill="#f5b8cf"/><circle cx="152" cy="220" r="52" fill="#f8c7d9"/><circle cx="180" cy="252" r="38" fill="#f3aac6"/><circle cx="128" cy="196" r="34" fill="#fbd3e2"/>
+        </g>
+        <g fill="#5d8f4e">
+          <rect x="905" y="220" width="9" height="150" rx="4"/><rect x="928" y="196" width="10" height="180" rx="4"/><rect x="952" y="230" width="9" height="145" rx="4"/><rect x="976" y="205" width="9" height="170" rx="4"/>
+          <ellipse cx="912" cy="215" rx="16" ry="6" transform="rotate(-24 912 215)"/><ellipse cx="938" cy="190" rx="17" ry="6" transform="rotate(18 938 190)"/><ellipse cx="960" cy="225" rx="15" ry="6" transform="rotate(-20 960 225)"/><ellipse cx="983" cy="200" rx="15" ry="6" transform="rotate(15 983 200)"/>
+        </g>
+        <ellipse cx="262" cy="505" rx="168" ry="62" fill="var(--g-pond1)"/>
+        <ellipse cx="262" cy="505" rx="168" ry="62" fill="url(#pondshine)"/>
+        <ellipse cx="205" cy="490" rx="18" ry="8" fill="#5f9b4a"/><ellipse cx="320" cy="522" rx="15" ry="7" fill="#5f9b4a"/>
+        <path d="M390 445 Q470 385 550 445" stroke="#8a5a3b" stroke-width="16" fill="none"/>
+        <path d="M390 445 Q470 385 550 445" stroke="#a9714b" stroke-width="9" fill="none"/>
+        <g stroke="#8a5a3b" stroke-width="6"><line x1="405" y1="438" x2="405" y2="412"/><line x1="470" y1="410" x2="470" y2="386"/><line x1="535" y1="438" x2="535" y2="412"/></g>
+        <line x1="399" y1="411" x2="541" y2="411" stroke="#a9714b" stroke-width="6"/>
+        <g fill="#9aa39b" opacity="${night?'.8':'1'}">
+          <rect x="556" y="292" width="26" height="14" rx="4"/><rect x="562" y="276" width="14" height="18"/><rect x="548" y="264" width="42" height="13" rx="6"/><rect x="565" y="306" width="8" height="26"/><rect x="552" y="330" width="34" height="9" rx="4"/>
+          <circle cx="569" cy="284" r="4" fill="${night?'#ffe97a':'#f8efc9'}"/>
+        </g>
+        <g>
+          <ellipse cx="680" cy="522" rx="140" ry="48" fill="#efe6cd"/>
+          <path d="M570 522q110-34 220 0M585 536q95-26 190 0M600 508q80-22 160 0" stroke="#d8ccab" stroke-width="4" fill="none"/>
+          <ellipse cx="650" cy="512" rx="17" ry="11" fill="#8f8f87"/><ellipse cx="722" cy="530" rx="13" ry="9" fill="#7d7d76"/>
+        </g>
+        <g>
+          <rect x="836" y="548" width="96" height="52" rx="6" fill="#7a5a3d"/>
+          <path d="M822 552 L884 512 L946 552 Z" fill="#5c4530"/>
+          <rect x="872" y="568" width="22" height="32" rx="3" fill="#3d2f22"/>
+          <circle cx="900" cy="580" r="5" fill="${night?'#ffe97a':'#c9b68f'}"/>
+        </g>
+        <g fill="#77926a"><ellipse cx="82" cy="600" rx="34" ry="20"/><ellipse cx="128" cy="612" rx="24" ry="15"/><ellipse cx="55" cy="618" rx="20" ry="12"/></g>
+        <g stroke="${M.ground2}" stroke-width="4" stroke-linecap="round" opacity=".9">
+          <path d="M60 680q6-16 2-30M74 682q4-14 12-24M470 668q6-16 0-28M486 670q6-12 14-20M940 668q4-14 0-26"/>
+        </g>
+        <defs><radialGradient id="pondshine" cx="40%" cy="35%"><stop offset="0%" stop-color="#ffffff66"/><stop offset="70%" stop-color="#ffffff00"/></radialGradient></defs>
+      </svg>
+      <span class="g-koi" style="left:23%;top:69%">🐠</span>
+      <span class="g-koi" style="left:29%;top:72%;animation-delay:-4.5s">🐟</span>
+      ${mx.rain?[...Array(34)].map((_,i)=>`<span class="g-rain" style="left:${(i*89)%100}%;animation-delay:-${(i%9)*.1}s"></span>`).join(''):''}
+      ${M.parts&&!mx.rain?[...Array(9)].map((_,i)=>`<span class="g-part" style="left:${(i*127)%100}%;animation-duration:${9+(i%5)*3}s;animation-delay:-${i*2.1}s">${M.parts}</span>`).join(''):''}
+      ${night?[...Array(7)].map((_,i)=>`<span class="g-firefly" style="left:${15+(i*137)%75}%;top:${55+(i*61)%35}%;animation-delay:-${i*1.1}s"></span>`).join(''):''}
+      <div class="heat"></div>
+      ${GAREAS.map(g=>`<div class="g-area" data-ga="${g.id}" style="left:${g.x}%;top:${g.y}%" role="button" aria-label="${g.n}"><span class="dot"></span><span class="lbl">${g.n}</span></div>`).join('')}
+      ${charHtml}
+      <span class="g-weather">${mx.label}</span>
+    </div>
+    <p class="tiny muted" style="text-align:center">El jardín cambia con el clima real de la costa este 🌦 · tu personaje descansa donde lo dejes, y toda la familia lo ve</p>
+  </div>`;
+  $$('[data-ga]',main).forEach(b=>b.onclick=()=>{
+    const aid=b.dataset.ga;
+    if(aid===((d.garden&&d.garden.get(m.id))||''))return;
+    const ch=$(`[data-gc="${m.id}"]`,main);
+    if(ch){ch.classList.add('walking');setTimeout(()=>ch.classList.remove('walking'),1650)}
+    appendEvents([{type:'garden.move',m:m.id,area:aid}],{silent:true});
+    const g=GAREAS.find(x=>x.id===aid);
+    if(ch){ch.style.left=g.x+'%';ch.style.top=g.y+'%'}
+    setTimeout(()=>{if(VIEW==='jardin')rerender()},1700);
+  });
+  if(!GWX)gardenWeather().then(()=>{if(VIEW==='jardin')rerender()});
 }
 /* ---------- VISTA: PERFIL ---------- */
 function renderPerfil(main,d){
