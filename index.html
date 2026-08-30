@@ -729,8 +729,8 @@ function deriveState(events,now){
         if('notas' in e.f)g.notas=e.f.notas;
         if(e.f.honorClosed)g.honorClosed=true;}
       if(e.actions)g.actions=e.actions;break}
-    case 'act.sched': D.acts.set(e.aid,{aid:e.aid,m:e.m,goalId:e.goalId||null,cat:e.cat,title:e.title,tier:e.tier,date:e.date,time:e.time||null,end:(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null,schedT:e.t,rescheduled:false,done:null,voided:false,canceled:false,evId:e.id});break;
-    case 'act.resched': {const a=D.acts.get(e.aid);if(a&&!a.done){a.date=e.date;a.time=e.time||a.time;if('end' in e)a.end=(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null;a.rescheduled=true;a.reschedT=e.t}break}
+    case 'act.sched': D.acts.set(e.aid,{aid:e.aid,m:e.m,goalId:e.goalId||null,cat:e.cat,title:e.title,tier:e.tier,date:e.date,time:e.time||null,end:(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null,notes:e.notes?String(e.notes).slice(0,300):'',grp:e.grp||null,schedT:e.t,rescheduled:false,done:null,voided:false,canceled:false,evId:e.id});break;
+    case 'act.resched': {const a=D.acts.get(e.aid);if(a&&!a.done){a.date=e.date;a.time=e.time||a.time;if('end' in e)a.end=(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null;if('notes' in e)a.notes=e.notes?String(e.notes).slice(0,300):'';a.rescheduled=true;a.reschedT=e.t}break}
     case 'act.min': {const a=D.acts.get(e.aid);if(a&&!a.done){a.tier='T1';if(e.title)a.title=e.title}break}
     case 'act.cancel': {const a=D.acts.get(e.aid);if(a&&!a.done)a.canceled=true;break}
     case 'act.done': {const a=D.acts.get(e.aid);if(a&&!a.done)a.done={t:e.t,kpi:e.kpi??null,note:e.note||'',evId:e.id};break}
@@ -1529,18 +1529,28 @@ function calDates(a){
 }
 function gcalUrl(a){
   const c=calDates(a),cat=CATS[a.cat]||CATS.otro;
-  return 'https://calendar.google.com/calendar/render?'+new URLSearchParams({action:'TEMPLATE',
-    text:`${cat.e} ${a.title}`,dates:`${c.s}/${c.e}`,
-    details:`${cat.n} · Familia PG Espacio Zen\n${location.origin+location.pathname}`}).toString();
+  const p={action:'TEMPLATE',text:`${cat.e} ${a.title}`,dates:`${c.s}/${c.e}`,
+    details:`${cat.n} · Familia PG Espacio Zen${a.notes?'\n'+a.notes:''}\n${location.origin+location.pathname}`};
+  if(a.rrule)p.recur='RRULE:'+a.rrule;
+  return 'https://calendar.google.com/calendar/render?'+new URLSearchParams(p).toString();
 }
 const icsEsc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+function expandRepeatDates(startK,days,weeks){
+  const out=[],total=Math.min(Math.max(weeks||1,1),12)*7;
+  for(let i=0;i<total;i++){const k=addDays(startK,i);if(days.includes(fromKey(k).getDay()))out.push(k)}
+  return out;
+}
 function icsForActivity(a){
   const c=calDates(a),cat=CATS[a.cat]||CATS.otro;
   const stamp=new Date().toISOString().replace(/[-:]|\.\d{3}/g,'');
-  const dt=c.allDay?`DTSTART;VALUE=DATE:${c.s}\r\nDTEND;VALUE=DATE:${c.e}`:`DTSTART:${c.s}\r\nDTEND:${c.e}`;
-  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Familia PG Espacio Zen//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
-    `UID:${a.aid}@familia-zen`,`DTSTAMP:${stamp}`,dt,`SUMMARY:${icsEsc(cat.e+' '+a.title)}`,
-    `DESCRIPTION:${icsEsc(cat.n+' · Familia PG Espacio Zen')}`,'STATUS:CONFIRMED','END:VEVENT','END:VCALENDAR'].join('\r\n')+'\r\n';
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Familia PG Espacio Zen//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
+    `UID:${a.aid}@familia-zen`,`DTSTAMP:${stamp}`];
+  if(c.allDay)L.push(`DTSTART;VALUE=DATE:${c.s}`,`DTEND;VALUE=DATE:${c.e}`);else L.push(`DTSTART:${c.s}`,`DTEND:${c.e}`);
+  if(a.rrule)L.push('RRULE:'+a.rrule);
+  L.push(`SUMMARY:${icsEsc(cat.e+' '+a.title)}`,
+    `DESCRIPTION:${icsEsc(cat.n+' · Familia PG Espacio Zen'+(a.notes?'\n'+a.notes:''))}`,
+    'STATUS:CONFIRMED','END:VEVENT','END:VCALENDAR');
+  return L.join('\r\n')+'\r\n';
 }
 function downloadIcs(a){
   const u=URL.createObjectURL(new Blob([icsForActivity(a)],{type:'text/calendar;charset=utf-8'}));
@@ -1555,6 +1565,7 @@ function actDetail(a){
     <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap">${tierBadge(a.tier)}
       ${done?`<span class="chip gold">+${a._pts} pts</span><span class="chip">×${(a._M||1).toFixed(2)}</span>${a._dr<1?`<span class="chip">rend. ${Math.round((a._dr||1)*100)}%</span>`:''}${a._evidDown?'<span class="chip">sin evidencia → Rama</span>':''}`:''}
       ${a.voided?'<span class="chip" style="color:var(--clay)">anulada</span>':''}</div>
+    ${a.notes?`<p class="small" style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:10px">📝 ${esc(a.notes)}</p>`:''}
     ${done&&a.done.note?`<p class="small" style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:10px">${esc(a.done.note)}</p>`:''}
     ${done&&a.done.kpi!=null?`<p class="small muted" style="margin-top:6px">KPI: <b>${a.done.kpi} ${g&&g.f.kpiUnit?esc(g.f.kpiUnit):''}</b></p>`:''}
     <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
@@ -1613,6 +1624,17 @@ function schedModal({date,edit,goalId}={}){
       <label class="field"><span class="lab">Hora <span class="muted">(a tiempo = +20%)</span></span><input id="s-time" type="time" value="${edit&&edit.time?edit.time:''}"></label>
       <label class="field"><span class="lab">Termina <span class="muted">(opcional)</span></span><input id="s-end" type="time" value="${edit&&edit.end?edit.end:''}"></label>
     </div>
+    ${edit?'':`<label class="field"><span class="lab">Repetir</span>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:2px" id="s-rep">
+        <button class="chip" data-rep="no">Nunca</button>
+        <button class="chip" data-rep="daily">Cada día</button>
+        <button class="chip" data-rep="custom">Personalizado…</button>
+      </div>
+      <div id="s-repbox" hidden style="margin-top:10px">
+        <div class="row" style="gap:5px" id="s-dow">${['D','L','M','X','J','V','S'].map((dn,i)=>`<button data-dow="${i}" style="width:34px;height:34px;border-radius:9px;border:1.5px solid var(--line);background:transparent;font-weight:700">${dn}</button>`).join('')}</div>
+        <div class="row small" style="gap:8px;margin-top:10px;align-items:center">Durante&nbsp;<input id="s-weeks" inputmode="numeric" value="4" style="width:52px;text-align:center">&nbsp;semanas</div>
+      </div></label>`}
+    <label class="field"><span class="lab">Notas <span class="muted">(opcional — van también al calendario)</span></span><textarea id="s-notes" rows="2" maxlength="300" placeholder="Detalles, enlaces, recordatorios…">${edit&&edit.notes?esc(edit.notes):''}</textarea></label>
     <div id="s-warn" class="tiny muted" style="margin-top:8px"></div>
     <button class="btn big" style="margin-top:10px" id="s-go">${edit?'Guardar cambios':'Planificar'}</button>`);
   mb.classList.add('sticky');
@@ -1631,6 +1653,18 @@ function schedModal({date,edit,goalId}={}){
   $$('#s-tiers [data-tier]',mb).forEach(b=>b.onclick=()=>{selTier=b.dataset.tier;paintTiers()});
   $('#s-cats',mb).onclick=e=>{const b=e.target.closest('[data-cat]');if(!b)return;selCat=b.dataset.cat;
     $$('#s-cats .chip',mb).forEach(x=>{const on=x.dataset.cat===selCat;x.className='chip'+(on?' cat':'');x.style.background=on?CATS[selCat].c:''})};
+  let repMode='no',repDays=new Set();
+  if(!edit){
+    const paintRep=()=>{$$('#s-rep [data-rep]',mb).forEach(b=>{const on=b.dataset.rep===repMode;b.style.borderColor=on?'var(--verde)':'var(--line)';b.style.background=on?'var(--verde-wash)':'transparent'});
+      $('#s-repbox',mb).hidden=repMode==='no';
+      $$('#s-dow [data-dow]',mb).forEach(b=>{const on=repDays.has(+b.dataset.dow);b.style.borderColor=on?'var(--verde)':'var(--line)';b.style.background=on?'var(--verde)':'transparent';b.style.color=on?'#fff':'inherit'})};
+    $$('#s-rep [data-rep]',mb).forEach(b=>b.onclick=()=>{repMode=b.dataset.rep;
+      if(repMode==='daily')repDays=new Set([0,1,2,3,4,5,6]);
+      if(repMode==='custom'&&!repDays.size)repDays=new Set([fromKey($('#s-date',mb).value||d.todayK).getDay()]);
+      paintRep()});
+    $$('#s-dow [data-dow]',mb).forEach(b=>b.onclick=()=>{const i=+b.dataset.dow;repDays.has(i)?repDays.delete(i):repDays.add(i);paintRep()});
+    paintRep();
+  }
   $('#s-go',mb).onclick=()=>{
     const title=$('#s-title',mb).value.trim();
     if(!title)return toast('Escribe qué harás');
@@ -1638,12 +1672,23 @@ function schedModal({date,edit,goalId}={}){
     let endv=$('#s-end',mb).value||null;
     if(endv&&(!tv||endv<=tv)){toast('⏱ La hora fin va después del inicio — se ignoró');endv=null}
     if(!dv)return toast('Elige un día');
-    if(edit){appendEvents([{type:'act.resched',aid:edit.aid,date:dv,time:tv,end:endv}]);mb.remove();toast('Actividad movida');return}
-    const na={aid:uid(),m:m.id,goalId:selGoal||null,cat:selCat,title,tier:selTier,date:dv,time:tv,end:endv};
-    appendEvents([Object.assign({type:'act.sched'},na)]);
-    mb.remove();toast('Planificada 🌱');
-    const cb=modal(`<h3>📆 ¿La añades a tu calendario?</h3>
-      <p class="small muted" style="margin-top:6px">${CATS[selCat].e} ${esc(title)} · ${fmtDate(dv)}${tv?' · '+tv+(endv?'–'+endv:''):''}</p>
+    const notev=($('#s-notes',mb).value||'').trim().slice(0,300);
+    if(edit){appendEvents([{type:'act.resched',aid:edit.aid,date:dv,time:tv,end:endv,notes:notev}]);mb.remove();toast('Actividad movida');return}
+    let dates=[dv],rrule=null;
+    if(repMode!=='no'){
+      if(!repDays.size)return toast('Elige al menos un día de la semana');
+      const wkN=clamp(parseInt($('#s-weeks',mb).value,10)||4,1,12);
+      dates=expandRepeatDates(dv,[...repDays],wkN);
+      if(!dates.length)dates=[dv];
+      const BY=['SU','MO','TU','WE','TH','FR','SA'];
+      if(dates.length>1)rrule=repDays.size===7?`FREQ=DAILY;COUNT=${dates.length}`:`FREQ=WEEKLY;BYDAY=${[...repDays].sort((a,b)=>a-b).map(i=>BY[i]).join(',')};COUNT=${dates.length}`;
+    }
+    const grp=dates.length>1?uid():null;
+    appendEvents(dates.map(dk=>({type:'act.sched',aid:uid(),m:m.id,goalId:selGoal||null,cat:selCat,title,tier:selTier,date:dk,time:tv,end:endv,notes:notev,grp})));
+    mb.remove();toast(dates.length>1?`Planificadas ${dates.length} actividades 🌱`:'Planificada 🌱');
+    const na={aid:uid(),title,cat:selCat,tier:selTier,date:dates[0],time:tv,end:endv,notes:notev,rrule};
+    const cb=modal(`<h3>📆 ¿${dates.length>1?'Las':'La'} añades a tu calendario?</h3>
+      <p class="small muted" style="margin-top:6px">${CATS[selCat].e} ${esc(title)} · ${dates.length>1?dates.length+' veces desde ':''}${fmtDate(dates[0])}${tv?' · '+tv+(endv?'–'+endv:''):''}${rrule?' · se añade como evento repetido':''}</p>
       <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
         <button class="btn small sec" id="cb-g">📅 Google</button>
         <button class="btn small sec" id="cb-a">📅 Apple (.ics)</button>
@@ -2965,6 +3010,14 @@ function runTests(){
     ok('T8 nivel 5 en el umbral exacto',levelOf(CONFIG.XP_TH(5))===5&&levelOf(CONFIG.XP_TH(5)-1)===4,'th5='+CONFIG.XP_TH(5));
     ok('T8 banda Bambú a 1200',ritmoTier(1200).n==='Bambú');
     ok('T8 banda Kenshō a 1900',ritmoTier(1900).n.includes('Kenshō'));
+  }
+  // T10: expansión de repetición semanal
+  {
+    const ds=expandRepeatDates('2026-09-01',[2,4],2);
+    ok('T10 mar/jue ×2 semanas = 4 fechas',ds.length===4,ds.join(','));
+    ok('T10 primera fecha = inicio',ds[0]==='2026-09-01');
+    ok('T10 todas caen en mar o jue',ds.every(k=>[2,4].includes(fromKey(k).getDay())));
+    ok('T10 diario ×1 semana = 7',expandRepeatDates('2026-09-01',[0,1,2,3,4,5,6],1).length===7);
   }
   // T9: desmarcar (act.undo)
   {
