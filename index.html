@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#141A16" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Familia Zen">
-<title>Familia Zen</title>
+<meta name="apple-mobile-web-app-title" content="Familia PG Zen Space">
+<title>Familia PG Zen Space</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
@@ -166,6 +166,18 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 .medallion{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 7px;border-radius:99px;font-weight:700;font-size:.82rem;border:1.5px solid}
 
 /* calendar */
+.monthgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.mday{min-height:50px;border-radius:11px;padding:4px 2px 3px;border:1.5px solid transparent;background:var(--surface);display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--font-d)}
+.mday .dnum2{font-size:.78rem;font-weight:700}
+.mday.out{opacity:.35}
+.mday.today:not(.sel){border-color:var(--verde)}
+.mday.sel{background:var(--verde)}
+.mday.sel .dnum2{color:#fff}
+.mday .dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;min-height:5px}
+.mday .dots i{width:5px;height:5px;border-radius:99px}
+.viewtoggle{display:flex;background:var(--surface2);border:1px solid var(--line);border-radius:99px;padding:3px;gap:2px;flex:none}
+.viewtoggle button{padding:4px 12px;border-radius:99px;font-size:.78rem;font-weight:700;color:var(--ink3)}
+.viewtoggle button.on{background:var(--verde);color:#fff}
 .weekhead{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:10px}
 .wday{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border-radius:13px;border:1.5px solid transparent;font-family:var(--font-d)}
 .wday .dn2{font-size:.62rem;font-weight:700;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
@@ -1075,7 +1087,7 @@ function closeModalsSafe(){/* los modales sobreviven a rerender solo si están m
 function renderTopbar(el,d){
   const m=me(),pm=myPM();
   el.innerHTML=`
-    <div class="brand">${ensoSvg()}Familia Zen</div>
+    <div class="brand">${ensoSvg()}Familia PG Zen Space</div>
     <div class="grow"></div>
     ${LOCALMODE?'<span class="chip" title="Sin configurar: los datos viven solo en este dispositivo">📵 Local</span>':`<span class="chip" id="sync-chip" title="${ONLINE?'Sincronizado con la familia':ONLINE===false?'Sin conexión: tus registros se guardan aquí y se enviarán al reconectar':'Conectando…'}">${ONLINE===false?'⚠️':ONLINE?'☁️':'⏳'}</span>`}
     <button class="chip" data-a="streak" title="Racha diaria">🔥 <b class="num">${pm?pm.dayStreak:0}</b></button>
@@ -1092,7 +1104,7 @@ function renderOnboarding(main){
   const code=(renderOnboarding._code=renderOnboarding._code||Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join(''));
   main.innerHTML=`<div class="login-wrap vgap">
     <div style="text-align:center;margin-bottom:6px">${ensoSvg().replace('class="enso"','style="width:64px;height:64px"')}
-      <h1 style="font-size:1.9rem;margin-top:8px">Familia Zen</h1>
+      <h1 style="font-size:1.9rem;margin-top:8px">Familia PG Zen Space</h1>
       <p class="muted" style="max-width:34ch;margin:8px auto 0">Metas SMART, calendario y un juego semanal para crecer en familia.</p>
     </div>
     <div class="card">
@@ -1465,29 +1477,56 @@ function schedModal({date,edit,goalId}={}){
   };
 }
 /* ---------- VISTA: CALENDARIO ---------- */
-let CAL_WK=null,CAL_DAY=null,CAL_FILTER='all';
+let CAL_WK=null,CAL_DAY=null,CAL_FILTER='all',CAL_MODE='week';
 function renderCal(main,d){
-  if(!CAL_WK)CAL_WK=d.curWk;
-  if(!CAL_DAY||monday(CAL_DAY)!==CAL_WK)CAL_DAY=CAL_WK<=d.todayK&&addDays(CAL_WK,6)>=d.todayK?d.todayK:CAL_WK;
+  if(!CAL_DAY)CAL_DAY=d.todayK;
+  CAL_WK=monday(CAL_DAY);
   const mems=[...d.members.values()];
-  const days=Array.from({length:7},(_,i)=>addDays(CAL_WK,i));
   const actsOf=(day)=>[...d.acts.values()].filter(a=>!a.canceled&&a.date===day&&(CAL_FILTER==='all'||a.m===CAL_FILTER)).sort((a,b)=>(a.time||'99')<(b.time||'99')?-1:1);
+  const dotHtml=(day,max)=>actsOf(day).slice(0,max).map(a=>`<i style="background:${a.done&&!a.voided?CATS[a.cat].c:'var(--line2)'}"></i>`).join('');
+  let headTitle,gridHtml;
+  if(CAL_MODE==='week'){
+    const days=Array.from({length:7},(_,i)=>addDays(CAL_WK,i));
+    headTitle=`<b>${fmtDate(CAL_WK)} – ${fmtDate(addDays(CAL_WK,6))}</b>`;
+    gridHtml=`<div class="weekhead">${days.map(day=>`
+      <button class="wday ${day===CAL_DAY?'sel':''} ${day===d.todayK?'today':''}" data-day="${day}">
+        <span class="dn2">${DOWS[(fromKey(day).getDay()+6)%7]}</span><span class="dd num">${fromKey(day).getDate()}</span>
+        <span class="dots">${dotHtml(day,4)}</span></button>`).join('')}</div>`;
+  }else{
+    const dd=fromKey(CAL_DAY);
+    const first=new Date(dd.getFullYear(),dd.getMonth(),1);
+    const last=new Date(dd.getFullYear(),dd.getMonth()+1,0);
+    headTitle=`<b style="text-transform:capitalize">${MESES[dd.getMonth()]} ${dd.getFullYear()}</b>`;
+    let cur=monday(dkey(first));
+    const cells=[];
+    while(cur<=dkey(last)){cells.push(cur);cur=addDays(cur,1)}
+    while(cells.length%7!==0)cells.push(cur),cur=addDays(cur,1);
+    gridHtml=`<div class="monthgrid">
+      ${DOWS.map(x=>`<div class="tiny muted" style="text-align:center;font-weight:700">${x[0]}</div>`).join('')}
+      ${cells.map(day=>{const out=fromKey(day).getMonth()!==dd.getMonth();
+        return `<button class="mday ${out?'out':''} ${day===CAL_DAY?'sel':''} ${day===d.todayK?'today':''}" data-day="${day}">
+          <span class="dnum2 num">${fromKey(day).getDate()}</span>
+          <span class="dots">${dotHtml(day,6)}</span></button>`}).join('')}
+    </div>`;
+  }
   main.innerHTML=`<div class="vgap">
     <div class="row between">
       <button class="btn small sec" data-a="prev">‹</button>
-      <div style="text-align:center"><b>${fmtDate(CAL_WK)} – ${fmtDate(addDays(CAL_WK,6))}</b>
-      ${CAL_WK===d.curWk?'<div class="tiny muted">semana actual</div>':`<button class="tiny greenk" data-a="now" style="font-weight:700">volver a hoy</button>`}</div>
+      <div style="text-align:center">${headTitle}
+      ${CAL_DAY===d.todayK?'<div class="tiny muted">hoy</div>':`<button class="tiny greenk" data-a="now" style="font-weight:700">volver a hoy</button>`}</div>
       <button class="btn small sec" data-a="next">›</button>
     </div>
-    <div class="scroll-x">
-      <button class="chip ${CAL_FILTER==='all'?'cat':''}" data-f="all" style="${CAL_FILTER==='all'?'background:var(--verde)':''}">👨‍👩‍👧‍👦 Todos</button>
-      ${mems.map(x=>`<button class="chip ${CAL_FILTER===x.id?'cat':''}" data-f="${x.id}" style="${CAL_FILTER===x.id?`background:${esc(x.color)}`:''}">${esc(x.emoji)} ${esc(x.name)}</button>`).join('')}
+    <div class="row between">
+      <div class="viewtoggle">
+        <button data-vm="week" class="${CAL_MODE==='week'?'on':''}">Semana</button>
+        <button data-vm="month" class="${CAL_MODE==='month'?'on':''}">Mes</button>
+      </div>
+      <div class="scroll-x" style="flex:1;margin-left:8px;justify-content:flex-end">
+        <button class="chip ${CAL_FILTER==='all'?'cat':''}" data-f="all" style="${CAL_FILTER==='all'?'background:var(--verde)':''}">👨‍👩‍👧‍👦 Todos</button>
+        ${mems.map(x=>`<button class="chip ${CAL_FILTER===x.id?'cat':''}" data-f="${x.id}" style="${CAL_FILTER===x.id?`background:${esc(x.color)}`:''}">${esc(x.emoji)} ${esc(x.name)}</button>`).join('')}
+      </div>
     </div>
-    <div class="weekhead">${days.map(day=>{
-      const acts=actsOf(day);
-      const dots=acts.slice(0,4).map(a=>`<i style="background:${a.done&&!a.voided?CATS[a.cat].c:'var(--line2)'}"></i>`).join('');
-      return `<button class="wday ${day===CAL_DAY?'sel':''} ${day===d.todayK?'today':''}" data-day="${day}">
-        <span class="dn2">${DOWS[(fromKey(day).getDay()+6)%7]}</span><span class="dd num">${fromKey(day).getDate()}</span><span class="dots">${dots}</span></button>`}).join('')}</div>
+    ${gridHtml}
     <div class="row between"><h3 class="small">${fmtLong(CAL_DAY)}</h3>
       <div class="row" style="gap:6px">
         ${CAL_DAY>d.todayK?`<button class="chip" data-a="rest2">🛌 Descanso</button>`:''}
@@ -1499,11 +1538,16 @@ function renderCal(main,d){
     </div>
   </div>`;
   const q=(s,f)=>{const b=$(`[data-a=${s}]`,main);if(b)b.onclick=f};
-  q('prev',()=>{CAL_WK=addDays(CAL_WK,-7);CAL_DAY=null;rerender()});
-  q('next',()=>{CAL_WK=addDays(CAL_WK,7);CAL_DAY=null;rerender()});
-  q('now',()=>{CAL_WK=d.curWk;CAL_DAY=d.todayK;rerender()});
+  const shift=(n)=>{
+    if(CAL_MODE==='week')CAL_DAY=addDays(CAL_DAY,7*n);
+    else{const x=fromKey(CAL_DAY);CAL_DAY=dkey(new Date(x.getFullYear(),x.getMonth()+n,1))}
+    rerender()};
+  q('prev',()=>shift(-1));
+  q('next',()=>shift(1));
+  q('now',()=>{CAL_DAY=d.todayK;rerender()});
   q('add',()=>schedModal({date:CAL_DAY}));
   q('rest2',()=>{appendEvents([{type:'day.rest',m:SESSION,date:CAL_DAY}]);toast('Descanso planificado 🍵')});
+  $$('[data-vm]',main).forEach(b=>b.onclick=()=>{CAL_MODE=b.dataset.vm;rerender()});
   $$('[data-f]',main).forEach(b=>b.onclick=()=>{CAL_FILTER=b.dataset.f;rerender()});
   $$('[data-day]',main).forEach(b=>b.onclick=()=>{CAL_DAY=b.dataset.day;rerender()});
   bindActCards($('#cal-list',main),d);
