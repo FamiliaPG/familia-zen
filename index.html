@@ -226,15 +226,34 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 .g-fly{position:absolute;font-size:14px;pointer-events:none;animation:butterfly 22s ease-in-out infinite;z-index:9}
 @keyframes butterfly{0%{transform:translate(0,0) rotate(-8deg)}20%{transform:translate(18vw,-6vh) rotate(10deg)}45%{transform:translate(34vw,3vh) rotate(-10deg)}70%{transform:translate(15vw,9vh) rotate(8deg)}100%{transform:translate(0,0) rotate(-8deg)}}
 /* koi SVG */
-.koi{transform-box:fill-box;transform-origin:center;animation:koiA 16s ease-in-out infinite}
-.koi.k2{animation:koiB 19s ease-in-out infinite}
-.koi.k3{animation:koiC 23s ease-in-out infinite}
-.koi .tail{transform-box:fill-box;transform-origin:left center;animation:tailwag .7s ease-in-out infinite alternate}
-@keyframes tailwag{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
-@keyframes koiA{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(130px,26px) rotate(24deg)}50%{transform:translate(60px,52px) rotate(180deg)}75%{transform:translate(-70px,30px) rotate(200deg)}100%{transform:translate(0,0) rotate(360deg)}}
-@keyframes koiB{0%{transform:translate(0,0) rotate(180deg)}30%{transform:translate(-110px,-20px) rotate(210deg)}60%{transform:translate(-40px,-46px) rotate(340deg)}100%{transform:translate(0,0) rotate(540deg)}}
-@keyframes koiC{0%{transform:translate(0,0) rotate(90deg)}40%{transform:translate(80px,-30px) rotate(160deg)}70%{transform:translate(-60px,14px) rotate(290deg)}100%{transform:translate(0,0) rotate(450deg)}}
-.koi.dart{animation-duration:3.5s !important}
+.koi{transform-box:fill-box;transform-origin:center;--ax:120px;--by:34px;animation:koiCCW 38s linear infinite}
+.koi.k2{--ax:88px;--by:24px;animation:koiCW 46s linear infinite;animation-delay:-12s}
+.koi.k3{--ax:150px;--by:30px;animation:koiCCW 54s linear infinite;animation-delay:-27s}
+.koi .tail{transform-box:fill-box;transform-origin:left center;animation:tailwag 1.1s ease-in-out infinite alternate}
+@keyframes tailwag{from{transform:rotate(-11deg)}to{transform:rotate(11deg)}}
+@keyframes koiCCW{
+ 0%{transform:translate(var(--ax),0) rotate(-90deg)}
+ 12.5%{transform:translate(calc(var(--ax)*.707),calc(var(--by)*.707)) rotate(-45deg)}
+ 25%{transform:translate(0px,var(--by)) rotate(0deg)}
+ 37.5%{transform:translate(calc(var(--ax)*-.707),calc(var(--by)*.707)) rotate(45deg)}
+ 50%{transform:translate(calc(var(--ax)*-1),0px) rotate(90deg)}
+ 62.5%{transform:translate(calc(var(--ax)*-.707),calc(var(--by)*-.707)) rotate(135deg)}
+ 75%{transform:translate(0px,calc(var(--by)*-1)) rotate(180deg)}
+ 87.5%{transform:translate(calc(var(--ax)*.707),calc(var(--by)*-.707)) rotate(225deg)}
+ 100%{transform:translate(var(--ax),0) rotate(270deg)}
+}
+@keyframes koiCW{
+ 0%{transform:translate(var(--ax),0) rotate(-270deg)}
+ 12.5%{transform:translate(calc(var(--ax)*.707),calc(var(--by)*-.707)) rotate(-315deg)}
+ 25%{transform:translate(0px,calc(var(--by)*-1)) rotate(-360deg)}
+ 37.5%{transform:translate(calc(var(--ax)*-.707),calc(var(--by)*-.707)) rotate(-405deg)}
+ 50%{transform:translate(calc(var(--ax)*-1),0px) rotate(-450deg)}
+ 62.5%{transform:translate(calc(var(--ax)*-.707),calc(var(--by)*.707)) rotate(-495deg)}
+ 75%{transform:translate(0px,var(--by)) rotate(-540deg)}
+ 87.5%{transform:translate(calc(var(--ax)*.707),calc(var(--by)*.707)) rotate(-585deg)}
+ 100%{transform:translate(var(--ax),0) rotate(-630deg)}
+}
+.koi.dart{animation-duration:12s !important}
 /* efectos táctiles */
 .g-ripple{position:absolute;border:2px solid #ffffffaa;border-radius:50%;pointer-events:none;animation:rippleout 1.1s ease-out forwards;z-index:9}
 @keyframes rippleout{from{width:8px;height:8px;opacity:.9;transform:translate(-50%,-50%)}to{width:90px;height:90px;opacity:0;transform:translate(-50%,-50%)}}
@@ -2108,9 +2127,9 @@ function renderJardin(main,d){
             <rect x="-58" y="0" width="116" height="60" rx="7" fill="#7a2e22"/>
             <path d="M-80 0 L0 46 L80 0 Z" fill="#5c1f16"/>
           </g>
-          ${koiSvg('k1',280,640,'#e8703a','#ffffff')}
-          ${koiSvg('k2',360,610,'#f2f2ee','#e8703a')}
-          ${koiSvg('k3',300,590,'#e8b13a','#3a3a3a')}
+          ${koiSvg('k1',300,640,'#e8703a','#ffffff')}
+          ${koiSvg('k2',330,600,'#f2f2ee','#e8703a')}
+          ${koiSvg('k3',300,655,'#e8b13a','#3a3a3a')}
           <ellipse cx="200" cy="600" rx="20" ry="9" fill="#5f9b4a"/><ellipse cx="215" cy="598" rx="4" ry="3" fill="#f3aac6"/>
           <ellipse cx="430" cy="668" rx="17" ry="8" fill="#5f9b4a"/>
           <g stroke="#5d8148" stroke-width="4" stroke-linecap="round"><path d="M118 590q-4-24 4-40M132 594q0-20 10-34M568 640q-2-20 6-34"/></g>
