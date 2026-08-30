@@ -226,6 +226,8 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 .g-fly{position:absolute;font-size:14px;pointer-events:none;animation:butterfly 22s ease-in-out infinite;z-index:9}
 @keyframes butterfly{0%{transform:translate(0,0) rotate(-8deg)}20%{transform:translate(18vw,-6vh) rotate(10deg)}45%{transform:translate(34vw,3vh) rotate(-10deg)}70%{transform:translate(15vw,9vh) rotate(8deg)}100%{transform:translate(0,0) rotate(-8deg)}}
 /* koi SVG */
+.riverflow{animation:flow 6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-72}}
 .koi{transform-box:fill-box;transform-origin:center;--ax:120px;--by:34px;animation:koiCCW 38s linear infinite}
 .koi.k2{--ax:88px;--by:24px;animation:koiCW 46s linear infinite;animation-delay:-12s}
 .koi.k3{--ax:150px;--by:30px;animation:koiCCW 54s linear infinite;animation-delay:-27s}
@@ -1976,7 +1978,7 @@ function officialTable(wrec,d){
 }
 /* ---------- VISTA: JARDÍN ZEN ---------- */
 const GAREAS=[
- {id:'torii',n:'Puerta Torii',x:76,y:47},
+ {id:'torii',n:'Puerta Torii',x:79,y:47},
  {id:'cerezo',n:'El Cerezo',x:17,y:62},
  {id:'colina',n:'Colina del Sol',x:27,y:41},
  {id:'pinos',n:'Bosque de Pinos',x:53,y:40},
@@ -2085,6 +2087,11 @@ function renderJardin(main,d){
         <ellipse cx="330" cy="352" rx="270" ry="92" fill="${M.ground}"/>
         <path d="M120 470 Q300 430 430 500 Q560 570 610 640" stroke="#cabb96" stroke-width="0" fill="none"/>
         <g fill="#b9ab8a" opacity=".85"><ellipse cx="200" cy="470" rx="17" ry="7"/><ellipse cx="255" cy="492" rx="15" ry="6"/><ellipse cx="310" cy="510" rx="17" ry="7"/><ellipse cx="500" cy="560" rx="16" ry="7"/><ellipse cx="560" cy="588" rx="15" ry="6"/><ellipse cx="700" cy="500" rx="16" ry="6"/><ellipse cx="748" cy="540" rx="15" ry="6"/></g>
+        <g>
+          <path d="M768 372 C740 420 706 470 668 515 C640 548 618 572 606 594" stroke="#8a7a5c" stroke-width="30" fill="none" stroke-linecap="round" opacity=".5"/>
+          <path d="M768 372 C740 420 706 470 668 515 C640 548 618 572 606 594" stroke="var(--g-pond1)" stroke-width="20" fill="none" stroke-linecap="round"/>
+          <path class="riverflow" d="M764 380 C738 424 704 472 666 516 C640 546 620 570 608 590" stroke="#ffffff55" stroke-width="3" fill="none" stroke-dasharray="14 22" stroke-linecap="round"/>
+        </g>
         <g opacity="${night?'.75':'1'}" data-fx="torii">
           <rect x="722" y="212" width="15" height="150" rx="5" fill="#b3402e"/><rect x="806" y="212" width="15" height="150" rx="5" fill="#b3402e"/>
           <rect x="702" y="204" width="140" height="16" rx="8" fill="#c74b35"/><rect x="712" y="234" width="120" height="11" rx="5" fill="#c74b35"/>
@@ -2130,11 +2137,12 @@ function renderJardin(main,d){
           <path d="M608 390 L640 372 L672 390 Z" fill="#8f978f"/>
           <circle cx="640" cy="367" r="4.5" fill="#8f978f"/>
         </g>
+        
         <g id="pond" data-fx="agua">
-          <ellipse cx="320" cy="634" rx="305" ry="113" fill="#8a7a5c" opacity=".5"/>
-          <ellipse cx="320" cy="630" rx="290" ry="105" fill="var(--g-pond1)"/>
-          <ellipse cx="320" cy="630" rx="290" ry="105" fill="url(#pondshine)"/>
-          <ellipse cx="440" cy="585" rx="150" ry="30" fill="#ffffff22"/>
+          <ellipse cx="330" cy="636" rx="330" ry="120" fill="#8a7a5c" opacity=".5"/>
+          <ellipse cx="330" cy="632" rx="315" ry="112" fill="var(--g-pond1)"/>
+          <ellipse cx="330" cy="632" rx="315" ry="112" fill="url(#pondshine)"/>
+          <ellipse cx="455" cy="582" rx="165" ry="33" fill="#ffffff22"/>
           <g opacity=".28" transform="translate(445 660) scale(1,-0.5)">
             <rect x="-58" y="0" width="116" height="60" rx="7" fill="#7a2e22"/>
             <path d="M-80 0 L0 46 L80 0 Z" fill="#5c1f16"/>
@@ -2147,7 +2155,7 @@ function renderJardin(main,d){
           <ellipse cx="430" cy="668" rx="17" ry="8" fill="#5f9b4a"/>
           <g stroke="#5d8148" stroke-width="4" stroke-linecap="round"><path d="M118 590q-4-24 4-40M132 594q0-20 10-34M568 640q-2-20 6-34"/></g>
         </g>
-        <g data-fx="campana" transform="translate(-143 -179) scale(1.32)">
+        <g data-fx="campana" transform="translate(-268.2 -179) scale(1.6 1.32)">
           <ellipse cx="447" cy="592" rx="86" ry="15" fill="#00000026"/>
           <rect x="380" y="568" width="134" height="14" rx="4" fill="#9a9a90"/>
           <rect x="388" y="556" width="118" height="14" rx="4" fill="#b0b0a6"/>
@@ -2276,7 +2284,7 @@ function renderJardin(main,d){
           <g stroke="#8a5a3b" stroke-width="6"><line x1="576" y1="628" x2="576" y2="602"/><line x1="640" y1="604" x2="640" y2="580"/><line x1="704" y1="628" x2="704" y2="602"/></g>
           <line x1="570" y1="601" x2="710" y2="601" stroke="#a9714b" stroke-width="6"/>
         </g>
-        <g>
+        <g transform="translate(-198.6 -151.4) scale(1.2)">
           <ellipse cx="893" cy="758" rx="110" ry="17" fill="#00000024"/>
           <rect x="800" y="738" width="186" height="11" rx="4" fill="#9a8a6a"/>
           <rect x="806" y="746" width="8" height="12" fill="#6d5a40"/><rect x="972" y="746" width="8" height="12" fill="#6d5a40"/>
@@ -2314,7 +2322,7 @@ function renderJardin(main,d){
       <div class="g-hot" data-fx-hot="pinos" style="left:55%;top:36%;width:18%;height:28%"></div>
       <div class="g-hot" data-fx-hot="agua" style="left:31%;top:79%;width:52%;height:25%"></div>
       <div class="g-hot" data-fx-hot="rosas" style="left:80%;top:81%;width:22%;height:14%"></div>
-      <div class="g-hot" data-fx-hot="campana" style="left:44.7%;top:52%;width:11%;height:13%"></div>
+      <div class="g-hot" data-fx-hot="campana" style="left:44.7%;top:52%;width:15%;height:13%"></div>
       ${GAREAS.map(g=>`<div class="g-area" data-ga="${g.id}" style="left:${g.x}%;top:${g.y}%" role="button" aria-label="${g.n}"><span class="dot"></span><span class="lbl">${g.n}</span></div>`).join('')}
       ${charHtml}
       <span class="g-weather">${mx.label}</span>
