@@ -729,8 +729,8 @@ function deriveState(events,now){
         if('notas' in e.f)g.notas=e.f.notas;
         if(e.f.honorClosed)g.honorClosed=true;}
       if(e.actions)g.actions=e.actions;break}
-    case 'act.sched': D.acts.set(e.aid,{aid:e.aid,m:e.m,goalId:e.goalId||null,cat:e.cat,title:e.title,tier:e.tier,date:e.date,time:e.time||null,schedT:e.t,rescheduled:false,done:null,voided:false,canceled:false,evId:e.id});break;
-    case 'act.resched': {const a=D.acts.get(e.aid);if(a&&!a.done){a.date=e.date;a.time=e.time||a.time;a.rescheduled=true;a.reschedT=e.t}break}
+    case 'act.sched': D.acts.set(e.aid,{aid:e.aid,m:e.m,goalId:e.goalId||null,cat:e.cat,title:e.title,tier:e.tier,date:e.date,time:e.time||null,end:(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null,schedT:e.t,rescheduled:false,done:null,voided:false,canceled:false,evId:e.id});break;
+    case 'act.resched': {const a=D.acts.get(e.aid);if(a&&!a.done){a.date=e.date;a.time=e.time||a.time;if('end' in e)a.end=(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null;a.rescheduled=true;a.reschedT=e.t}break}
     case 'act.min': {const a=D.acts.get(e.aid);if(a&&!a.done){a.tier='T1';if(e.title)a.title=e.title}break}
     case 'act.cancel': {const a=D.acts.get(e.aid);if(a&&!a.done)a.canceled=true;break}
     case 'act.done': {const a=D.acts.get(e.aid);if(a&&!a.done)a.done={t:e.t,kpi:e.kpi??null,note:e.note||'',evId:e.id};break}
@@ -1449,7 +1449,7 @@ function actCard(a,d){
     <div class="grow">
       <b class="t">${esc(a.title)}</b>
       <div class="row tiny muted" style="gap:7px;margin-top:2px;flex-wrap:wrap">
-        ${a.time?`<span>🕐 ${a.time}</span>`:''}
+        ${a.time?`<span>🕐 ${a.time}${a.end?'–'+a.end:''}</span>`:''}
         ${tierBadge(a.tier)}
         ${g?`<span title="Vinculada a meta">🎯 ${esc((g.f.smartFinal||g.f.objetivo||'Meta').slice(0,24))}</span>`:''}
         ${improvised?'<span title="No planificada con antelación">⚡ improvisada · 50%</span>':''}
@@ -1514,12 +1514,15 @@ function finishComplete(a,{kpi=null,note=''}={},btn){
   toast(`${msg} · +${pts} pts`,3200);
 }
 /* ---------- calendario externo (Google / Apple) · Puerto Rico = UTC-4 todo el año ---------- */
+const CAL_TIER_MIN={T1:15,T2:30,T3:60,T4:120,T5:150};
 function calDates(a){
   const [y,mo,dd]=a.date.split('-').map(Number);
   if(a.time&&/^\d{1,2}:\d{2}$/.test(a.time)){
     const [h,mi]=a.time.split(':').map(Number);
     const s=Date.UTC(y,mo-1,dd,h+4,mi), f=t=>new Date(t).toISOString().replace(/[-:]|\.\d{3}/g,'');
-    return {allDay:false,s:f(s),e:f(s+36e5)};
+    let dur=(CAL_TIER_MIN[a.tier]||60)*6e4;
+    if(a.end&&/^\d{1,2}:\d{2}$/.test(a.end)&&a.end>a.time){const [eh,em]=a.end.split(':').map(Number);dur=((eh-h)*60+(em-mi))*6e4}
+    return {allDay:false,s:f(s),e:f(s+dur)};
   }
   const p=n=>String(n).padStart(2,'0'), nx=new Date(Date.UTC(y,mo-1,dd+1));
   return {allDay:true,s:`${y}${p(mo)}${p(dd)}`,e:`${nx.getUTCFullYear()}${p(nx.getUTCMonth()+1)}${p(nx.getUTCDate())}`};
@@ -1548,7 +1551,7 @@ function downloadIcs(a){
 function actDetail(a){
   const d=D(),m=d.members.get(a.m),g=a.goalId?d.goals.get(a.goalId):null;
   const done=a.done&&!a.voided;
-  const mb=modal(`<div class="row">${avatarHtml(m,40)}<div class="grow"><b>${esc(a.title)}</b><div class="tiny muted">${fmtDate(a.date)} ${a.time?'· '+a.time:''}</div></div>${catChip(a.cat)}</div>
+  const mb=modal(`<div class="row">${avatarHtml(m,40)}<div class="grow"><b>${esc(a.title)}</b><div class="tiny muted">${fmtDate(a.date)} ${a.time?'· '+a.time+(a.end?'–'+a.end:''):''}</div></div>${catChip(a.cat)}</div>
     <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap">${tierBadge(a.tier)}
       ${done?`<span class="chip gold">+${a._pts} pts</span><span class="chip">×${(a._M||1).toFixed(2)}</span>${a._dr<1?`<span class="chip">rend. ${Math.round((a._dr||1)*100)}%</span>`:''}${a._evidDown?'<span class="chip">sin evidencia → Rama</span>':''}`:''}
       ${a.voided?'<span class="chip" style="color:var(--clay)">anulada</span>':''}</div>
@@ -1605,9 +1608,10 @@ function schedModal({date,edit,goalId}={}){
       <div class="vgap" id="s-tiers" style="margin-top:2px">${Object.keys(CONFIG.BASE).map(t=>`
         <button class="row" data-tier="${t}" style="width:100%;padding:8px 10px;border-radius:11px;border:1.5px solid ${t===selTier?'var(--verde)':'var(--line)'};background:${t===selTier?'var(--verde-wash)':'transparent'}">
           <b style="width:74px;text-align:left">${CONFIG.TIER_NAMES[t]}</b><span class="tiny muted grow" style="text-align:left">${CONFIG.TIER_DESC[t]}</span><b class="num gold">${CONFIG.BASE[t]}</b></button>`).join('')}</div></label>
+    <label class="field"><span class="lab">Día</span><input id="s-date" type="date" value="${dateV}"></label>
     <div class="grid2">
-      <label class="field"><span class="lab">Día</span><input id="s-date" type="date" value="${dateV}"></label>
       <label class="field"><span class="lab">Hora <span class="muted">(a tiempo = +20%)</span></span><input id="s-time" type="time" value="${edit&&edit.time?edit.time:''}"></label>
+      <label class="field"><span class="lab">Termina <span class="muted">(opcional)</span></span><input id="s-end" type="time" value="${edit&&edit.end?edit.end:''}"></label>
     </div>
     <div id="s-warn" class="tiny muted" style="margin-top:8px"></div>
     <button class="btn big" style="margin-top:10px" id="s-go">${edit?'Guardar cambios':'Planificar'}</button>`);
@@ -1631,13 +1635,15 @@ function schedModal({date,edit,goalId}={}){
     const title=$('#s-title',mb).value.trim();
     if(!title)return toast('Escribe qué harás');
     const dv=$('#s-date',mb).value, tv=$('#s-time',mb).value||null;
+    let endv=$('#s-end',mb).value||null;
+    if(endv&&(!tv||endv<=tv)){toast('⏱ La hora fin va después del inicio — se ignoró');endv=null}
     if(!dv)return toast('Elige un día');
-    if(edit){appendEvents([{type:'act.resched',aid:edit.aid,date:dv,time:tv}]);mb.remove();toast('Actividad movida');return}
-    const na={aid:uid(),m:m.id,goalId:selGoal||null,cat:selCat,title,tier:selTier,date:dv,time:tv};
+    if(edit){appendEvents([{type:'act.resched',aid:edit.aid,date:dv,time:tv,end:endv}]);mb.remove();toast('Actividad movida');return}
+    const na={aid:uid(),m:m.id,goalId:selGoal||null,cat:selCat,title,tier:selTier,date:dv,time:tv,end:endv};
     appendEvents([Object.assign({type:'act.sched'},na)]);
     mb.remove();toast('Planificada 🌱');
     const cb=modal(`<h3>📆 ¿La añades a tu calendario?</h3>
-      <p class="small muted" style="margin-top:6px">${CATS[selCat].e} ${esc(title)} · ${fmtDate(dv)}${tv?' · '+tv:''}</p>
+      <p class="small muted" style="margin-top:6px">${CATS[selCat].e} ${esc(title)} · ${fmtDate(dv)}${tv?' · '+tv+(endv?'–'+endv:''):''}</p>
       <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
         <button class="btn small sec" id="cb-g">📅 Google</button>
         <button class="btn small sec" id="cb-a">📅 Apple (.ics)</button>
