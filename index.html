@@ -1989,6 +1989,7 @@ const GAREAS=[
  {id:'estanque',n:'Estanque Koi',x:19,y:92},
  {id:'arena',n:'Jardín de Rosas',x:80,y:79},
  {id:'te',n:'Casa de Té',x:83,y:93},
+ {id:'bonsai',n:'Bonsái de Mauro',x:64,y:96},
  {id:'musgo',n:'Rocas de Musgo',x:8,y:90},
 ];
 const GMOODS={
@@ -2293,6 +2294,27 @@ function renderJardin(main,d){
           <rect x="886" y="600" width="14" height="16" rx="3" fill="#42331f"/>
           <circle cx="820" cy="702" r="6" fill="${night?'#ffe97a':'#e8b13a'}"/><line x1="820" y1="688" x2="820" y2="696" stroke="#42331f" stroke-width="2"/>
         </g>
+        <g>
+          <ellipse cx="700" cy="775" rx="42" ry="8" fill="#00000024"/>
+          <path d="M678 772 C674 756 682 746 684 738" stroke="#5c4530" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <path d="M722 772 C726 756 718 746 716 738" stroke="#5c4530" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <path d="M681 758 L719 758" stroke="#6d4a33" stroke-width="5" stroke-linecap="round"/>
+          <rect x="664" y="728" width="72" height="7" rx="3.5" fill="#a9714b"/>
+          <rect x="668" y="734" width="64" height="8" rx="3" fill="#8a5a3b"/>
+          <line x1="674" y1="738" x2="726" y2="738" stroke="#6d4a33" stroke-width="1.5" opacity=".6"/>
+          <rect x="676" y="702" width="48" height="7" rx="3" fill="#2e4a6e"/>
+          <path d="M680 709 L720 709 L716 728 L684 728 Z" fill="#3f5f8a"/>
+          <path d="M683 714 q4 3 8 0 q4 -3 8 0 q4 3 8 0 q4 -3 8 0" stroke="#e8d9b0" stroke-width="1.6" fill="none" opacity=".85"/>
+          <circle cx="690" cy="722" r="1.4" fill="#e8d9b0" opacity=".7"/><circle cx="700" cy="723" r="1.4" fill="#e8d9b0" opacity=".7"/><circle cx="710" cy="722" r="1.4" fill="#e8d9b0" opacity=".7"/>
+          <ellipse cx="700" cy="704" rx="19" ry="4" fill="#4a3527"/>
+          <circle cx="691" cy="703" r="1.6" fill="#5f8a4a"/><circle cx="708" cy="704" r="1.6" fill="#5f8a4a"/>
+          <path d="M700 704 C695 691 706 684 698 672 C692 663 701 657 697 649" stroke="#6d4a33" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+          <path d="M699 679 C707 675 712 670 716 664" stroke="#6d4a33" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <ellipse cx="686" cy="653" rx="16" ry="8" fill="#4a7c40"/><ellipse cx="684" cy="650" rx="13" ry="6" fill="#5f9b4a"/>
+          <ellipse cx="712" cy="645" rx="17" ry="8.5" fill="#4a7c40"/><ellipse cx="710" cy="642" rx="14" ry="6.5" fill="#5f9b4a"/>
+          <ellipse cx="698" cy="633" rx="13" ry="7" fill="#4a7c40"/><ellipse cx="697" cy="630" rx="10" ry="5" fill="#5f9b4a"/>
+          <ellipse cx="720" cy="661" rx="11" ry="5.5" fill="#4a7c40"/><ellipse cx="719" cy="659" rx="9" ry="4.5" fill="#5f9b4a"/>
+        </g>
         <g fill="#77926a"><ellipse cx="78" cy="712" rx="36" ry="21"/><ellipse cx="128" cy="726" rx="26" ry="16"/><ellipse cx="50" cy="732" rx="21" ry="13"/><ellipse cx="100" cy="738" rx="18" ry="10" fill="#8aa87b"/></g>
         <g stroke="${M.ground2}" stroke-width="4" stroke-linecap="round" opacity=".9">
           <path d="M60 786q6-16 2-30M74 788q4-14 12-24M470 780q6-16 0-28M486 782q6-12 14-20M940 778q4-14 0-26M640 786q5-14 1-26"/>
@@ -2314,6 +2336,7 @@ function renderJardin(main,d){
       <div class="g-hot" data-fx-hot="cerezo" style="left:79%;top:54%;width:13%;height:17%"></div>
       <div class="g-hot" data-fx-hot="pinos" style="left:55%;top:36%;width:18%;height:28%"></div>
       <div class="g-hot" data-fx-hot="agua" style="left:31%;top:79%;width:52%;height:25%"></div>
+      <div class="g-hot" data-fx-hot="bonsai" style="left:70%;top:87%;width:8%;height:16%"></div>
       <div class="g-hot" data-fx-hot="rosas" style="left:80%;top:81%;width:22%;height:14%"></div>
       <div class="g-hot" data-fx-hot="campana" style="left:44.7%;top:52%;width:15%;height:13%"></div>
       ${GAREAS.map(g=>`<div class="g-area" data-ga="${g.id}" style="left:${g.x}%;top:${g.y}%" role="button" aria-label="${g.n}"><span class="dot"></span><span class="lbl">${g.n}</span></div>`).join('')}
@@ -2363,7 +2386,7 @@ function renderJardin(main,d){
       if(bell){bell.classList.remove('bellglow');void bell.getBoundingClientRect();bell.classList.add('bellglow')}
       gnote([1318,1318],1.6,.08);
     }else{
-      const ch={cerezo:'🌸',arce:'🍁',pinos:'🌿',rosas:'🌹'}[kind]||'🍃';
+      const ch={cerezo:'🌸',arce:'🍁',pinos:'🌿',rosas:'🌹',bonsai:'🍃'}[kind]||'🍃';
       for(let i=0;i<8;i++){
         const s=document.createElement('span');s.className='g-burst';s.textContent=ch;
         s.style.left=(p.x+(Math.random()*10-5))+'%';s.style.top=(p.y+(Math.random()*6-3))+'%';
