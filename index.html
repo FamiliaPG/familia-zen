@@ -2290,7 +2290,7 @@ function renderJardin(main,d){
         <defs><radialGradient id="pondshine" cx="40%" cy="35%"><stop offset="0%" stop-color="#ffffff55"/><stop offset="70%" stop-color="#ffffff00"/></radialGradient></defs>
       </svg>
       ${mx.rain?[...Array(38)].map((_,i)=>`<span class="g-rain" style="left:${(i*89)%100}%;animation-delay:-${(i%9)*.1}s"></span>`).join(''):''}
-      ${M.parts&&!mx.rain?[...Array(5)].map((_,i)=>`<span class="g-part" style="left:${(i*127)%100}%;animation-duration:${9+(i%5)*3}s;animation-delay:-${i*2.1}s">${M.parts}</span>`).join(''):''}
+      ${M.parts?[...Array(4)].map((_,i)=>`<span class="g-part" style="left:${(i*127)%100}%;animation-duration:${11+(i%4)*4}s;animation-delay:-${i*3.7}s">${M.parts}</span>`).join(''):''}
       ${night?[...Array(8)].map((_,i)=>`<span class="g-firefly" style="left:${13+(i*137)%75}%;top:${52+(i*61)%38}%;animation-delay:-${i*1.1}s"></span>`).join(''):
         `<span class="g-fly" style="left:18%;top:48%">🦋</span>`}
       <span class="g-bird" style="top:9%;animation-duration:34s"><span class="bob"><svg viewBox="0 0 27 19"><ellipse cx="12" cy="11" rx="8.5" ry="4.6" fill="#d0402e"/><circle cx="19.5" cy="7.5" r="3.6" fill="#d0402e"/><polygon points="22.6,7 27,8.4 22.6,9.6" fill="#e8933a"/><polygon points="4,11 -1,7.5 -1,14" fill="#d0402e" opacity=".85"/><path class="wingf" d="M8 10 Q13 -1 20 6 Q16 11 8 10 Z" fill="#00000038"/><circle cx="20.6" cy="6.8" r=".9" fill="#241a14"/></svg></span></span>
