@@ -264,10 +264,11 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 .bellglow{animation:bellring .8s ease-in-out}
 @keyframes bellring{0%,100%{transform:rotate(0)}25%{transform:rotate(9deg)}55%{transform:rotate(-8deg)}80%{transform:rotate(4deg)}}
 /* áreas */
-.g-area{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;z-index:7;padding:9px}
+.g-area{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column-reverse;align-items:center;gap:4px;cursor:pointer;z-index:7;padding:9px}
+.g-area:hover{z-index:12}
 .g-area .dot{width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px #ffffff30,0 0 12px 2px #ffffff50;animation:areapulse 3s ease-in-out infinite}
 @keyframes areapulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
-.g-area .lbl{font-size:.55rem;font-weight:700;letter-spacing:.04em;color:#fff;background:#00000060;padding:2px 7px;border-radius:99px;backdrop-filter:blur(3px);white-space:nowrap;opacity:0;transform:translateY(-4px) scale(.88);transition:opacity .22s ease,transform .22s ease;pointer-events:none}
+.g-area .lbl{font-size:.55rem;font-weight:700;letter-spacing:.04em;color:#fff;background:#00000060;padding:2px 7px;border-radius:99px;backdrop-filter:blur(3px);white-space:nowrap;opacity:0;transform:translateY(5px) scale(.88);transition:opacity .22s ease,transform .22s ease;pointer-events:none}
 .g-area:hover .lbl,.g-area:active .lbl,.g-area:focus-visible .lbl{opacity:1;transform:translateY(0) scale(1)}
 .g-area:hover .dot{background:var(--kin-bright)}
 /* personajes con cuerpo (yukata) */
