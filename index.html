@@ -1982,7 +1982,7 @@ const GAREAS=[
  {id:'cerezo',n:'El Cerezo',x:17,y:62},
  {id:'colina',n:'Colina del Sol',x:27,y:41},
  {id:'pinos',n:'Bosque de Pinos',x:53,y:40},
- {id:'farol',n:'Farol de Piedra',x:64,y:55},
+ {id:'farol',n:'Pino Solitario',x:64,y:55},
  {id:'bambu',n:'Bambú',x:92,y:56},
  {id:'puente',n:'El Puente',x:64,y:74},
  {id:'pagoda',n:'Templo de Paz',x:44,y:74},
@@ -2088,9 +2088,9 @@ function renderJardin(main,d){
         <path d="M120 470 Q300 430 430 500 Q560 570 610 640" stroke="#cabb96" stroke-width="0" fill="none"/>
         <g fill="#b9ab8a" opacity=".85"><ellipse cx="200" cy="470" rx="17" ry="7"/><ellipse cx="255" cy="492" rx="15" ry="6"/><ellipse cx="310" cy="510" rx="17" ry="7"/><ellipse cx="500" cy="560" rx="16" ry="7"/><ellipse cx="560" cy="588" rx="15" ry="6"/><ellipse cx="700" cy="500" rx="16" ry="6"/><ellipse cx="748" cy="540" rx="15" ry="6"/></g>
         <g>
-          <path d="M768 372 C748 402 702 416 698 450 C694 480 730 494 716 524 C704 550 660 554 638 574 C624 586 610 592 604 596" stroke="#8a7a5c" stroke-width="30" fill="none" stroke-linecap="round" opacity=".5"/>
-          <path d="M768 372 C748 402 702 416 698 450 C694 480 730 494 716 524 C704 550 660 554 638 574 C624 586 610 592 604 596" stroke="var(--g-pond1)" stroke-width="20" fill="none" stroke-linecap="round"/>
-          <path class="riverflow" d="M764 380 C746 406 700 420 696 452 C692 478 726 494 712 522 C700 546 658 550 636 570 C624 580 612 588 606 594" stroke="#ffffff66" stroke-width="4" fill="none" stroke-dasharray="3 30" stroke-linecap="round"/>
+          <path d="M802 334 C790 350 776 360 768 372 C748 402 702 416 698 450 C694 480 730 494 716 524 C704 550 660 554 638 574 C624 586 610 592 604 596" stroke="#8a7a5c" stroke-width="30" fill="none" stroke-linecap="round" opacity=".5"/>
+          <path d="M802 334 C790 350 776 360 768 372 C748 402 702 416 698 450 C694 480 730 494 716 524 C704 550 660 554 638 574 C624 586 610 592 604 596" stroke="var(--g-pond1)" stroke-width="20" fill="none" stroke-linecap="round"/>
+          <path class="riverflow" d="M798 342 C788 356 774 366 764 380 C746 406 700 420 696 452 C692 478 726 494 712 522 C700 546 658 550 636 570 C624 580 612 588 606 594" stroke="#ffffff66" stroke-width="4" fill="none" stroke-dasharray="3 30" stroke-linecap="round"/>
         </g>
         <g opacity="${night?'.75':'1'}" data-fx="torii">
           <rect x="722" y="212" width="15" height="150" rx="5" fill="#b3402e"/><rect x="806" y="212" width="15" height="150" rx="5" fill="#b3402e"/>
@@ -2110,12 +2110,7 @@ function renderJardin(main,d){
           <rect x="358" y="340" width="15" height="92" rx="6" fill="#5f4430"/>
           <circle cx="340" cy="300" r="40" fill="#d9682f"/><circle cx="390" cy="286" r="46" fill="#e2793a"/><circle cx="408" cy="326" r="32" fill="#c85a28"/><circle cx="356" cy="262" r="30" fill="#eb8a48"/>
         </g>
-        <g data-fx="cerezo" transform="translate(-168.1 -75.1) scale(1.35)">
-          <ellipse cx="706" cy="468" rx="66" ry="13" fill="#00000020"/>
-          <path d="M706 466 q-5-38 5-62 M706 466 q10-32 22-46" stroke="#6d4a33" stroke-width="9" fill="none" stroke-linecap="round"/>
-          <circle cx="684" cy="392" r="30" fill="#f5b8cf"/><circle cx="722" cy="380" r="34" fill="#f8c7d9"/><circle cx="746" cy="408" r="25" fill="#f3aac6"/><circle cx="702" cy="362" r="23" fill="#fbd3e2"/>
-          <circle cx="718" cy="392" r="4" fill="#fde7f0"/>
-        </g>
+        
         <g data-fx="pinos" transform="translate(-44.8 -59.9) scale(1.08)">
           <ellipse cx="540" cy="452" rx="130" ry="22" fill="#00000022"/>
           ${pineSvg(490,330,1.05,'#2e5233')}${pineSvg(560,300,1.35,'#2a4c30')}${pineSvg(620,345,0.9,'#33593a')}
@@ -2128,15 +2123,13 @@ function renderJardin(main,d){
           <g stroke="#4f7a42" stroke-width="3"><line x1="895" y1="330" x2="905" y2="330"/><line x1="920" y1="310" x2="931" y2="310"/><line x1="946" y1="345" x2="956" y2="345"/><line x1="971" y1="320" x2="981" y2="320"/></g>
           <ellipse cx="902" cy="285" rx="17" ry="6" transform="rotate(-24 902 285)"/><ellipse cx="930" cy="256" rx="18" ry="6" transform="rotate(18 930 256)"/><ellipse cx="953" cy="295" rx="16" ry="6" transform="rotate(-20 953 295)"/><ellipse cx="978" cy="266" rx="16" ry="6" transform="rotate(15 978 266)"/>
         </g>
-        <g opacity="${night?'.92':'1'}">
-          <ellipse cx="640" cy="446" rx="36" ry="8" fill="#00000022"/>
-          <rect x="620" y="432" width="40" height="11" rx="3" fill="#8f978f"/>
-          <rect x="631" y="407" width="18" height="26" rx="3" fill="#9aa39b"/>
-          <rect x="618" y="390" width="44" height="19" rx="4" fill="#aab3a9"/>
-          <rect x="631" y="394" width="18" height="12" rx="2" fill="${night?'#ffd76a':'#f4ecd2'}"/>
-          <path d="M608 390 L640 372 L672 390 Z" fill="#8f978f"/>
-          <circle cx="640" cy="367" r="4.5" fill="#8f978f"/>
+        <g data-fx="cerezo" transform="translate(-168.1 -75.1) scale(1.35)">
+          <ellipse cx="706" cy="468" rx="66" ry="13" fill="#00000020"/>
+          <path d="M706 466 q-5-38 5-62 M706 466 q10-32 22-46" stroke="#6d4a33" stroke-width="9" fill="none" stroke-linecap="round"/>
+          <circle cx="684" cy="392" r="30" fill="#f5b8cf"/><circle cx="722" cy="380" r="34" fill="#f8c7d9"/><circle cx="746" cy="408" r="25" fill="#f3aac6"/><circle cx="702" cy="362" r="23" fill="#fbd3e2"/>
+          <circle cx="718" cy="392" r="4" fill="#fde7f0"/>
         </g>
+        ${pineSvg(640,398,0.62,'#30532f')}
         
         <g id="pond" data-fx="agua">
           <ellipse cx="330" cy="636" rx="312" ry="114" fill="#8a7a5c" opacity=".5"/>
