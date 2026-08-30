@@ -2092,7 +2092,7 @@ function renderJardin(main,d){
           <path d="M695 190 q77 -14 154 0" fill="#8f3122"/>
         </g>
         <ellipse cx="772" cy="372" rx="95" ry="18" fill="#00000018"/>
-        <g data-fx="cerezo" transform="translate(35 45)">
+        <g data-fx="cerezo" transform="translate(5 -67) scale(1.25)">
           <ellipse cx="128" cy="450" rx="105" ry="20" fill="#00000020"/>
           <path d="M120 448 q-6-60 8-98 M120 448 q14-50 34-72 M124 400 q-22-24-40-30" stroke="#6d4a33" stroke-width="13" fill="none" stroke-linecap="round"/>
           <circle cx="88" cy="298" r="48" fill="#f5b8cf"/><circle cx="146" cy="278" r="56" fill="#f8c7d9"/><circle cx="188" cy="316" r="42" fill="#f3aac6"/><circle cx="118" cy="252" r="38" fill="#fbd3e2"/><circle cx="62" cy="336" r="30" fill="#f3aac6"/>
@@ -2120,6 +2120,15 @@ function renderJardin(main,d){
           <rect x="895" y="290" width="10" height="176" rx="4"/><rect x="920" y="262" width="11" height="205" rx="4"/><rect x="946" y="300" width="10" height="168" rx="4"/><rect x="971" y="272" width="10" height="196" rx="4"/>
           <g stroke="#4f7a42" stroke-width="3"><line x1="895" y1="330" x2="905" y2="330"/><line x1="920" y1="310" x2="931" y2="310"/><line x1="946" y1="345" x2="956" y2="345"/><line x1="971" y1="320" x2="981" y2="320"/></g>
           <ellipse cx="902" cy="285" rx="17" ry="6" transform="rotate(-24 902 285)"/><ellipse cx="930" cy="256" rx="18" ry="6" transform="rotate(18 930 256)"/><ellipse cx="953" cy="295" rx="16" ry="6" transform="rotate(-20 953 295)"/><ellipse cx="978" cy="266" rx="16" ry="6" transform="rotate(15 978 266)"/>
+        </g>
+        <g opacity="${night?'.92':'1'}">
+          <ellipse cx="640" cy="446" rx="36" ry="8" fill="#00000022"/>
+          <rect x="620" y="432" width="40" height="11" rx="3" fill="#8f978f"/>
+          <rect x="631" y="407" width="18" height="26" rx="3" fill="#9aa39b"/>
+          <rect x="618" y="390" width="44" height="19" rx="4" fill="#aab3a9"/>
+          <rect x="631" y="394" width="18" height="12" rx="2" fill="${night?'#ffd76a':'#f4ecd2'}"/>
+          <path d="M608 390 L640 372 L672 390 Z" fill="#8f978f"/>
+          <circle cx="640" cy="367" r="4.5" fill="#8f978f"/>
         </g>
         <g id="pond" data-fx="agua">
           <ellipse cx="320" cy="634" rx="305" ry="113" fill="#8a7a5c" opacity=".5"/>
@@ -2299,7 +2308,7 @@ function renderJardin(main,d){
       <span class="g-bird" style="top:23%;animation-duration:52s;animation-delay:-22s"><span class="bob" style="animation-delay:-2s"><svg viewBox="0 0 27 19"><ellipse cx="12" cy="11" rx="8.5" ry="4.6" fill="#c73b2a"/><circle cx="19.5" cy="7.5" r="3.6" fill="#c73b2a"/><polygon points="22.6,7 27,8.4 22.6,9.6" fill="#e8933a"/><polygon points="4,11 -1,7.5 -1,14" fill="#c73b2a" opacity=".85"/><path class="wingf" d="M8 10 Q13 -1 20 6 Q16 11 8 10 Z" fill="#00000038"/><circle cx="20.6" cy="6.8" r=".9" fill="#241a14"/></svg></span></span>
       <span class="g-bird rev" style="top:30%;animation-duration:61s;animation-delay:-33s"><span class="bob" style="animation-delay:-1.4s"><svg viewBox="0 0 27 19"><ellipse cx="12" cy="11" rx="8.5" ry="4.6" fill="#f2c04a"/><circle cx="19.5" cy="7.5" r="3.6" fill="#f2c04a"/><polygon points="22.6,7 27,8.4 22.6,9.6" fill="#c9722a"/><polygon points="4,11 -1,7.5 -1,14" fill="#f2c04a" opacity=".85"/><path class="wingf" d="M8 10 Q13 -1 20 6 Q16 11 8 10 Z" fill="#00000038"/><circle cx="20.6" cy="6.8" r=".9" fill="#241a14"/></svg></span></span>
       <div class="heat"></div>
-      <div class="g-hot" data-fx-hot="cerezo" style="left:15%;top:43%;width:19%;height:26%"></div>
+      <div class="g-hot" data-fx-hot="cerezo" style="left:16%;top:40%;width:22%;height:30%"></div>
       <div class="g-hot" data-fx-hot="arce" style="left:31.5%;top:36%;width:10%;height:17%"></div>
       <div class="g-hot" data-fx-hot="cerezo" style="left:75%;top:57%;width:13%;height:18%"></div>
       <div class="g-hot" data-fx-hot="pinos" style="left:55%;top:36%;width:18%;height:28%"></div>
