@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#141A16" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Familia PG Zen Space">
-<title>Familia PG Zen Space</title>
+<meta name="apple-mobile-web-app-title" content="Familia PG Espacio Zen">
+<title>Familia PG Espacio Zen</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
@@ -1087,7 +1087,7 @@ function closeModalsSafe(){/* los modales sobreviven a rerender solo si están m
 function renderTopbar(el,d){
   const m=me(),pm=myPM();
   el.innerHTML=`
-    <div class="brand">${ensoSvg()}Familia PG Zen Space</div>
+    <div class="brand">${ensoSvg()}Familia PG Espacio Zen</div>
     <div class="grow"></div>
     ${LOCALMODE?'<span class="chip" title="Sin configurar: los datos viven solo en este dispositivo">📵 Local</span>':`<span class="chip" id="sync-chip" title="${ONLINE?'Sincronizado con la familia':ONLINE===false?'Sin conexión: tus registros se guardan aquí y se enviarán al reconectar':'Conectando…'}">${ONLINE===false?'⚠️':ONLINE?'☁️':'⏳'}</span>`}
     <button class="chip" data-a="streak" title="Racha diaria">🔥 <b class="num">${pm?pm.dayStreak:0}</b></button>
@@ -1104,7 +1104,7 @@ function renderOnboarding(main){
   const code=(renderOnboarding._code=renderOnboarding._code||Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join(''));
   main.innerHTML=`<div class="login-wrap vgap">
     <div style="text-align:center;margin-bottom:6px">${ensoSvg().replace('class="enso"','style="width:64px;height:64px"')}
-      <h1 style="font-size:1.9rem;margin-top:8px">Familia PG Zen Space</h1>
+      <h1 style="font-size:1.9rem;margin-top:8px">Familia PG Espacio Zen</h1>
       <p class="muted" style="max-width:34ch;margin:8px auto 0">Metas SMART, calendario y un juego semanal para crecer en familia.</p>
     </div>
     <div class="card">
