@@ -1541,7 +1541,8 @@ function icsForActivity(a){
 }
 function downloadIcs(a){
   const u=URL.createObjectURL(new Blob([icsForActivity(a)],{type:'text/calendar;charset=utf-8'}));
-  const l=document.createElement('a');l.href=u;l.download='actividad.ics';document.body.appendChild(l);l.click();
+  const fn=(a.title||'actividad').replace(/[\\\/:*?"<>|]/g,'').trim().slice(0,60)||'actividad';
+  const l=document.createElement('a');l.href=u;l.download=fn+'.ics';document.body.appendChild(l);l.click();
   setTimeout(()=>{URL.revokeObjectURL(u);l.remove()},2000);
 }
 function actDetail(a){
