@@ -1512,6 +1512,37 @@ function finishComplete(a,{kpi=null,note=''}={},btn){
   }
   toast(`${msg} · +${pts} pts`,3200);
 }
+/* ---------- calendario externo (Google / Apple) · Puerto Rico = UTC-4 todo el año ---------- */
+function calDates(a){
+  const [y,mo,dd]=a.date.split('-').map(Number);
+  if(a.time&&/^\d{1,2}:\d{2}$/.test(a.time)){
+    const [h,mi]=a.time.split(':').map(Number);
+    const s=Date.UTC(y,mo-1,dd,h+4,mi), f=t=>new Date(t).toISOString().replace(/[-:]|\.\d{3}/g,'');
+    return {allDay:false,s:f(s),e:f(s+36e5)};
+  }
+  const p=n=>String(n).padStart(2,'0'), nx=new Date(Date.UTC(y,mo-1,dd+1));
+  return {allDay:true,s:`${y}${p(mo)}${p(dd)}`,e:`${nx.getUTCFullYear()}${p(nx.getUTCMonth()+1)}${p(nx.getUTCDate())}`};
+}
+function gcalUrl(a){
+  const c=calDates(a),cat=CATS[a.cat]||CATS.otro;
+  return 'https://calendar.google.com/calendar/render?'+new URLSearchParams({action:'TEMPLATE',
+    text:`${cat.e} ${a.title}`,dates:`${c.s}/${c.e}`,
+    details:`${cat.n} · Familia PG Espacio Zen\n${location.origin+location.pathname}`}).toString();
+}
+const icsEsc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+function icsForActivity(a){
+  const c=calDates(a),cat=CATS[a.cat]||CATS.otro;
+  const stamp=new Date().toISOString().replace(/[-:]|\.\d{3}/g,'');
+  const dt=c.allDay?`DTSTART;VALUE=DATE:${c.s}\r\nDTEND;VALUE=DATE:${c.e}`:`DTSTART:${c.s}\r\nDTEND:${c.e}`;
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Familia PG Espacio Zen//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
+    `UID:${a.aid}@familia-zen`,`DTSTAMP:${stamp}`,dt,`SUMMARY:${icsEsc(cat.e+' '+a.title)}`,
+    `DESCRIPTION:${icsEsc(cat.n+' · Familia PG Espacio Zen')}`,'STATUS:CONFIRMED','END:VEVENT','END:VCALENDAR'].join('\r\n')+'\r\n';
+}
+function downloadIcs(a){
+  const u=URL.createObjectURL(new Blob([icsForActivity(a)],{type:'text/calendar;charset=utf-8'}));
+  const l=document.createElement('a');l.href=u;l.download='actividad.ics';document.body.appendChild(l);l.click();
+  setTimeout(()=>{URL.revokeObjectURL(u);l.remove()},2000);
+}
 function actDetail(a){
   const d=D(),m=d.members.get(a.m),g=a.goalId?d.goals.get(a.goalId):null;
   const done=a.done&&!a.voided;
@@ -1523,12 +1554,15 @@ function actDetail(a){
     ${done&&a.done.kpi!=null?`<p class="small muted" style="margin-top:6px">KPI: <b>${a.done.kpi} ${g&&g.f.kpiUnit?esc(g.f.kpiUnit):''}</b></p>`:''}
     <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
       ${!done&&!a.voided?`<button class="btn small sec" id="ad-move">Mover de día</button><button class="btn small sec" id="ad-del" style="color:var(--clay)">Eliminar</button>`:''}
+      ${!done&&!a.voided&&!a.canceled?`<button class="btn small ghost" id="ad-gcal">📅 Google</button><button class="btn small ghost" id="ad-ics">📅 Apple (.ics)</button>`:''}
       ${done&&SESSION!==a.m?`<button class="btn small sec" id="ad-kudo">💛 Kudo (+15)</button>`:''}
       ${done&&!a.voided&&SESSION!==a.m?`<button class="btn small ghost" id="ad-duda" style="color:var(--clay);border-color:var(--clay)">Plantear duda</button>`:''}
     </div>`);
   const q=(s,f)=>{const b=$(s,mb);if(b)b.onclick=f};
   q('#ad-move',()=>{mb.remove();schedModal({edit:a})});
   q('#ad-del',()=>{if(confirm('¿Eliminar esta actividad?')){appendEvents([{type:'act.cancel',aid:a.aid}]);mb.remove()}});
+  q('#ad-gcal',()=>window.open(gcalUrl(a),'_blank'));
+  q('#ad-ics',()=>downloadIcs(a));
   q('#ad-kudo',()=>{
     const wk=monday(dkey(new Date()));
     const given=STATE.events.filter(e=>e.type==='kudo'&&e.m===SESSION&&monday(dkey(new Date(e.t)))===wk).length;
@@ -2446,6 +2480,15 @@ function renderPerfil(main,d){
     ${pm.quotes.size?`<div class="card"><h3 class="small">🃏 Semillas de Sabiduría · ${pm.quotes.size}/${QUOTES.length}</h3>
       <div class="vgap" style="margin-top:8px">${[...pm.quotes].map(i=>`<p class="small" style="background:var(--verde-wash);border-radius:10px;padding:9px 12px;margin:0">«${QUOTES[i]}»</p>`).join('')}</div></div>`:''}
     <div class="card">
+      <h3 class="small">📆 Tu calendario (Google / Apple)</h3>
+      <p class="small muted" style="margin-top:8px">Suscríbete una sola vez y tus actividades agendadas aparecerán solas en tu calendario (solo lectura). Apple suele refrescar cada rato; Google puede tardar horas.</p>
+      <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+        <button class="btn small sec" data-a="calcopy">🔗 Copiar enlace</button>
+        <a class="btn small sec" data-a="calapple" href="${SUPA.url.replace('https://','webcal://')}/functions/v1/ics?m=${m.id}" style="text-decoration:none">🍎 Suscribirse (Apple)</a>
+      </div>
+      <p class="tiny muted" style="margin-top:8px">Google Calendar: Ajustes → Añadir calendario → <b>Desde URL</b> → pega el enlace. En iPhone/Mac, el botón de Apple abre la suscripción directamente. Cada nueva actividad que agendes aquí aparecerá sin hacer nada más.</p>
+    </div>
+    <div class="card">
       <h3 class="small">⚙️ Ajustes</h3>
       <label class="row between" style="margin-top:12px"><span class="small">🍃 Modo Sendero <span class="tiny muted">(ocultar mi número de puesto)</span></span>
         <input type="checkbox" data-set="sendero" ${m.sendero?'checked':''} style="width:auto"></label>
@@ -2468,6 +2511,9 @@ function renderPerfil(main,d){
   </div>`;
   const q=(s,f)=>{const b=$(`[data-a=${s}]`,main);if(b)b.onclick=f};
   q('edit',()=>profileEditor(m.id));
+  q('calcopy',async()=>{const u=`${SUPA.url}/functions/v1/ics?m=${m.id}`;
+    try{await navigator.clipboard.writeText(u);toast('Enlace copiado · pégalo en Google Calendar (Desde URL)')}
+    catch(_e){prompt('Copia este enlace:',u)}});
   q('switch',()=>{SESSION=null;try{localStorage.removeItem(LSDEV)}catch(e){};rerender()});
   q('export',()=>{
     const json=JSON.stringify(STATE,null,1);
