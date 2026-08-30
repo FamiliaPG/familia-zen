@@ -250,26 +250,30 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 @keyframes areapulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 .g-area .lbl{font-size:.55rem;font-weight:700;letter-spacing:.04em;color:#fff;background:#00000042;padding:2px 7px;border-radius:99px;backdrop-filter:blur(3px);white-space:nowrap}
 .g-area:hover .dot{background:var(--kin-bright)}
-/* personajes con cuerpo */
+/* personajes con cuerpo (yukata) */
 .g-char{position:absolute;transform:translate(-50%,-96%);display:flex;flex-direction:column;align-items:center;z-index:10;transition:left 1.8s cubic-bezier(.45,.05,.35,1),top 1.8s cubic-bezier(.45,.05,.35,1)}
 .g-char .rig{position:relative;display:flex;flex-direction:column;align-items:center;animation:idlebob 3.4s ease-in-out infinite;transform-origin:50% 100%;cursor:pointer}
-.g-char .head{font-size:30px;line-height:1;z-index:2;filter:drop-shadow(0 2px 3px #0004);animation:headtilt 5s ease-in-out infinite}
+.g-char .head{font-size:32px;line-height:1;z-index:3;filter:drop-shadow(0 2px 3px #0004);animation:headtilt 5s ease-in-out infinite}
 @keyframes headtilt{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
-.g-char .torso{width:24px;height:26px;border-radius:11px 11px 9px 9px;background:linear-gradient(180deg,var(--mc),color-mix(in srgb,var(--mc) 68%,#000));margin-top:-7px;position:relative;z-index:1;box-shadow:inset 0 -3px 5px #0002}
-.g-char .torso::after{content:"";position:absolute;left:50%;top:5px;transform:translateX(-50%);width:8px;height:13px;border-radius:5px;background:#ffffff2e}
-.g-char .arm{position:absolute;top:1px;width:7px;height:18px;border-radius:5px;background:color-mix(in srgb,var(--mc) 80%,#000);transform-origin:50% 12%;z-index:0}
-.g-char .arm.l{left:-5px;animation:armswing 3.4s ease-in-out infinite}
-.g-char .arm.r{right:-5px;animation:armswing 3.4s ease-in-out infinite reverse}
+.g-char .robe{width:30px;height:31px;border-radius:13px 13px 12px 12px;background:linear-gradient(180deg,color-mix(in srgb,var(--mc) 88%,#fff),var(--mc) 45%,color-mix(in srgb,var(--mc) 62%,#000));margin-top:-8px;position:relative;z-index:2;box-shadow:inset -3px -4px 6px #00000026,inset 2px 2px 4px #ffffff2a}
+.g-char .robe::before{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid #f6f1e6;filter:drop-shadow(0 1px 0 #00000022)}
+.g-char .robe::after{content:"";position:absolute;left:0;right:0;bottom:9px;height:6px;background:linear-gradient(180deg,color-mix(in srgb,var(--mc) 30%,#141a16),color-mix(in srgb,var(--mc) 45%,#000));box-shadow:0 1px 0 #ffffff1c}
+.g-char .obiknot{position:absolute;right:-2px;bottom:10px;width:7px;height:7px;border-radius:3px;background:color-mix(in srgb,var(--mc) 28%,#101512);z-index:3}
+.g-char .arm{position:absolute;top:2px;width:10px;height:20px;border-radius:6px 6px 8px 8px;background:linear-gradient(180deg,var(--mc),color-mix(in srgb,var(--mc) 68%,#000));transform-origin:50% 12%;z-index:1;box-shadow:inset -2px -2px 3px #0000002a}
+.g-char .arm::after{content:"";position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#f0c9a2;box-shadow:inset -1px -1px 1px #0003}
+.g-char .arm.l{left:-7px;animation:armswing 3.4s ease-in-out infinite}
+.g-char .arm.r{right:-7px;animation:armswing 3.4s ease-in-out infinite reverse}
 @keyframes armswing{0%,100%{transform:rotate(7deg)}50%{transform:rotate(-7deg)}}
-.g-char .legs{display:flex;gap:4px;margin-top:-2px}
-.g-char .leg{width:8px;height:11px;border-radius:0 0 5px 5px;background:color-mix(in srgb,var(--mc) 45%,#1c2620);transform-origin:top center}
+.g-char .legs{display:flex;gap:5px;margin-top:-3px;z-index:1}
+.g-char .leg{width:8px;height:10px;border-radius:3px 3px 2px 2px;background:color-mix(in srgb,var(--mc) 38%,#1c2620);transform-origin:top center;position:relative}
+.g-char .leg::after{content:"";position:absolute;left:-1px;bottom:-3px;width:11px;height:4px;border-radius:2px 4px 2px 2px;background:#4a3527;box-shadow:0 1px 1px #0004}
 .g-char.walking .rig{animation:hopwalk .4s ease-in-out infinite}
 .g-char.walking .leg.l{animation:step .4s ease-in-out infinite}
 .g-char.walking .leg.r{animation:step .4s ease-in-out infinite reverse}
 @keyframes step{0%,100%{transform:rotate(20deg)}50%{transform:rotate(-20deg)}}
 .g-char.walking .arm.l{animation:armswing .4s ease-in-out infinite}
 .g-char.walking .arm.r{animation:armswing .4s ease-in-out infinite reverse}
-.g-char .gshadow{width:34px;height:8px;border-radius:50%;background:#00000040;margin-top:2px;animation:shadowbob 3.4s ease-in-out infinite}
+.g-char .gshadow{width:36px;height:8px;border-radius:50%;background:#00000040;margin-top:3px;animation:shadowbob 3.4s ease-in-out infinite}
 .g-char .tag{margin-top:3px;font-size:.58rem;font-weight:700;color:#fff;background:#00000055;border:1.5px solid transparent;padding:1.5px 8px;border-radius:99px;backdrop-filter:blur(3px);white-space:nowrap}
 .g-char.me .tag{border-color:var(--kin-bright);background:#00000075}
 .g-char.me .rig::before{content:"▼";position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--kin-bright);animation:idlebob 1.6s ease-in-out infinite}
@@ -277,6 +281,16 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 @keyframes idlebob{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-4px) scale(.99,1.015)}}
 @keyframes shadowbob{0%,100%{transform:scaleX(1);opacity:.75}50%{transform:scaleX(.84);opacity:.5}}
 @keyframes hopwalk{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-9px) rotate(2deg)}}
+/* pájaros */
+.g-bird{position:absolute;width:27px;height:19px;pointer-events:none;z-index:7;animation:birdfly linear infinite}
+.g-bird.rev{animation-name:birdflyrev}
+.g-bird .bob{width:100%;height:100%;animation:birdbob 2.4s ease-in-out infinite alternate}
+@keyframes birdfly{from{transform:translateX(-16vw)}to{transform:translateX(114vw)}}
+@keyframes birdflyrev{from{transform:translateX(114vw) scaleX(-1)}to{transform:translateX(-16vw) scaleX(-1)}}
+@keyframes birdbob{from{transform:translateY(-7px) rotate(-3deg)}to{transform:translateY(7px) rotate(3deg)}}
+.g-bird svg{width:100%;height:100%;overflow:visible}
+.g-bird .wingf{transform-box:fill-box;transform-origin:75% 85%;animation:flap .32s ease-in-out infinite alternate}
+@keyframes flap{from{transform:rotate(30deg)}to{transform:rotate(-34deg)}}
 #garden-scene .heat{position:absolute;inset:0;pointer-events:none;background:var(--g-tint);mix-blend-mode:soft-light}
 .g-weather{position:absolute;top:10px;right:12px;z-index:20;font-size:.72rem;font-weight:700;color:#fff;background:#00000048;padding:4px 11px;border-radius:99px;backdrop-filter:blur(4px)}
 @media (prefers-reduced-motion: reduce){#garden-scene *{animation:none !important}}
@@ -1947,7 +1961,7 @@ const GAREAS=[
  {id:'farol',n:'Farol de Piedra',x:64,y:55},
  {id:'bambu',n:'Bambú',x:92,y:56},
  {id:'puente',n:'El Puente',x:64,y:74},
- {id:'pagoda',n:'El Pabellón',x:44,y:71},
+ {id:'pagoda',n:'Templo de Paz',x:44,y:74},
  {id:'estanque',n:'Estanque Koi',x:24,y:83},
  {id:'arena',n:'Jardín de Arena',x:80,y:79},
  {id:'te',n:'Casa de Té',x:83,y:93},
@@ -1999,12 +2013,12 @@ function pineSvg(x,y,s,dark){
   </g>`;
 }
 function koiSvg(cls,cx,cy,body,patch){
-  return `<g class="koi ${cls}" transform="translate(${cx} ${cy})">
+  return `<g transform="translate(${cx} ${cy})"><g class="koi ${cls}">
     <ellipse cx="0" cy="0" rx="16" ry="7" fill="${body}"/>
     <ellipse cx="-4" cy="-1.5" rx="6" ry="3.5" fill="${patch}"/>
     <path class="tail" d="M14 0 L26 -7 L23 0 L26 7 Z" fill="${body}"/>
     <circle cx="-11" cy="-2" r="1.4" fill="#222"/>
-  </g>`;
+  </g></g>`;
 }
 function renderJardin(main,d){
   const m=me();
@@ -2026,7 +2040,7 @@ function renderJardin(main,d){
     return `<div class="g-char ${mm.id===m.id?'me':''}" data-gc="${mm.id}" style="left:${g.x+off}%;top:${g.y}%">
       <div class="rig" style="--mc:${esc(mm.color)};animation-delay:${(i*0.7)%3}s">
         <span class="head">${esc(mm.emoji)}</span>
-        <span class="torso"><span class="arm l"></span><span class="arm r"></span></span>
+        <span class="robe"><span class="arm l"></span><span class="arm r"></span><span class="obiknot"></span></span>
         <span class="legs"><span class="leg l"></span><span class="leg r"></span></span>
       </div>
       <span class="gshadow" style="animation-delay:${(i*0.7)%3}s"></span>
@@ -2067,6 +2081,12 @@ function renderJardin(main,d){
           <rect x="358" y="340" width="15" height="92" rx="6" fill="#5f4430"/>
           <circle cx="340" cy="300" r="40" fill="#d9682f"/><circle cx="390" cy="286" r="46" fill="#e2793a"/><circle cx="408" cy="326" r="32" fill="#c85a28"/><circle cx="356" cy="262" r="30" fill="#eb8a48"/>
         </g>
+        <g data-fx="cerezo">
+          <ellipse cx="706" cy="468" rx="66" ry="13" fill="#00000020"/>
+          <path d="M706 466 q-5-38 5-62 M706 466 q10-32 22-46" stroke="#6d4a33" stroke-width="9" fill="none" stroke-linecap="round"/>
+          <circle cx="684" cy="392" r="30" fill="#f5b8cf"/><circle cx="722" cy="380" r="34" fill="#f8c7d9"/><circle cx="746" cy="408" r="25" fill="#f3aac6"/><circle cx="702" cy="362" r="23" fill="#fbd3e2"/>
+          <circle cx="718" cy="392" r="4" fill="#fde7f0"/>
+        </g>
         <g data-fx="pinos">
           <ellipse cx="540" cy="452" rx="130" ry="22" fill="#00000022"/>
           ${pineSvg(490,330,1.05,'#2e5233')}${pineSvg(560,300,1.35,'#2a4c30')}${pineSvg(620,345,0.9,'#33593a')}
@@ -2093,7 +2113,7 @@ function renderJardin(main,d){
           <ellipse cx="430" cy="668" rx="17" ry="8" fill="#5f9b4a"/>
           <g stroke="#5d8148" stroke-width="4" stroke-linecap="round"><path d="M118 590q-4-24 4-40M132 594q0-20 10-34M568 640q-2-20 6-34"/></g>
         </g>
-        <g data-fx="campana">
+        <g data-fx="campana" transform="translate(-143 -179) scale(1.32)">
           <ellipse cx="447" cy="592" rx="86" ry="15" fill="#00000026"/>
           <rect x="380" y="568" width="134" height="14" rx="4" fill="#9a9a90"/>
           <rect x="388" y="556" width="118" height="14" rx="4" fill="#b0b0a6"/>
@@ -2118,11 +2138,20 @@ function renderJardin(main,d){
           <ellipse cx="768" cy="636" rx="18" ry="12" fill="#8f8f87"/><ellipse cx="846" cy="656" rx="14" ry="10" fill="#7d7d76"/>
         </g>
         <g>
-          <ellipse cx="900" cy="740" rx="86" ry="16" fill="#00000022"/>
-          <rect x="852" y="678" width="98" height="54" rx="6" fill="#7a5a3d"/>
-          <path d="M838 682 L901 640 L964 682 Z" fill="#5c4530"/>
-          <rect x="888" y="700" width="24" height="32" rx="3" fill="#3d2f22"/>
-          <circle cx="918" cy="712" r="5" fill="${night?'#ffe97a':'#c9b68f'}"/>
+          <ellipse cx="893" cy="758" rx="110" ry="17" fill="#00000024"/>
+          <rect x="800" y="738" width="186" height="11" rx="4" fill="#9a8a6a"/>
+          <rect x="806" y="746" width="8" height="12" fill="#6d5a40"/><rect x="972" y="746" width="8" height="12" fill="#6d5a40"/>
+          <rect x="816" y="678" width="154" height="62" rx="5" fill="#8a6a48"/>
+          <rect x="828" y="692" width="35" height="34" rx="3" fill="${night?'#ffd76a':'#f6ead2'}"/>
+          <rect x="922" y="692" width="35" height="34" rx="3" fill="${night?'#ffd76a':'#f6ead2'}"/>
+          <g stroke="#8a6a48" stroke-width="2"><line x1="845" y1="692" x2="845" y2="726"/><line x1="828" y1="709" x2="863" y2="709"/><line x1="939" y1="692" x2="939" y2="726"/><line x1="922" y1="709" x2="957" y2="709"/></g>
+          <rect x="874" y="690" width="30" height="48" rx="3" fill="#3d2f22"/>
+          <line x1="889" y1="690" x2="889" y2="738" stroke="#8a6a48" stroke-width="2"/>
+          <path d="M792 682 Q893 620 994 682 L976 692 Q893 640 810 692 Z" fill="#5c4530"/>
+          <path d="M792 682 Q893 620 994 682" stroke="#42331f" stroke-width="5" fill="none"/>
+          <path d="M834 650 L893 612 L952 650 Z" fill="#4a3728"/>
+          <rect x="886" y="600" width="14" height="16" rx="3" fill="#42331f"/>
+          <circle cx="820" cy="702" r="6" fill="${night?'#ffe97a':'#e8b13a'}"/><line x1="820" y1="688" x2="820" y2="696" stroke="#42331f" stroke-width="2"/>
         </g>
         <g fill="#77926a"><ellipse cx="78" cy="712" rx="36" ry="21"/><ellipse cx="128" cy="726" rx="26" ry="16"/><ellipse cx="50" cy="732" rx="21" ry="13"/><ellipse cx="100" cy="738" rx="18" ry="10" fill="#8aa87b"/></g>
         <g stroke="${M.ground2}" stroke-width="4" stroke-linecap="round" opacity=".9">
@@ -2135,12 +2164,17 @@ function renderJardin(main,d){
       ${M.parts&&!mx.rain?[...Array(10)].map((_,i)=>`<span class="g-part" style="left:${(i*127)%100}%;animation-duration:${9+(i%5)*3}s;animation-delay:-${i*2.1}s">${M.parts}</span>`).join(''):''}
       ${night?[...Array(8)].map((_,i)=>`<span class="g-firefly" style="left:${13+(i*137)%75}%;top:${52+(i*61)%38}%;animation-delay:-${i*1.1}s"></span>`).join(''):
         `<span class="g-fly" style="left:18%;top:48%">🦋</span>`}
+      <span class="g-bird" style="top:9%;animation-duration:34s"><span class="bob"><svg viewBox="0 0 27 19"><ellipse cx="12" cy="11" rx="8.5" ry="4.6" fill="#d0402e"/><circle cx="19.5" cy="7.5" r="3.6" fill="#d0402e"/><polygon points="22.6,7 27,8.4 22.6,9.6" fill="#e8933a"/><polygon points="4,11 -1,7.5 -1,14" fill="#d0402e" opacity=".85"/><path class="wingf" d="M8 10 Q13 -1 20 6 Q16 11 8 10 Z" fill="#00000038"/><circle cx="20.6" cy="6.8" r=".9" fill="#241a14"/></svg></span></span>
+      <span class="g-bird rev" style="top:16%;animation-duration:43s;animation-delay:-11s"><span class="bob" style="animation-delay:-1s"><svg viewBox="0 0 27 19"><ellipse cx="12" cy="11" rx="8.5" ry="4.6" fill="#e8b13a"/><circle cx="19.5" cy="7.5" r="3.6" fill="#e8b13a"/><polygon points="22.6,7 27,8.4 22.6,9.6" fill="#c9722a"/><polygon points="4,11 -1,7.5 -1,14" fill="#e8b13a" opacity=".85"/><path class="wingf" d="M8 10 Q13 -1 20 6 Q16 11 8 10 Z" fill="#00000038"/><circle cx="20.6" cy="6.8" r=".9" fill="#241a14"/></svg></span></span>
+      <span class="g-bird" style="top:23%;animation-duration:52s;animation-delay:-22s"><span class="bob" style="animation-delay:-2s"><svg viewBox="0 0 27 19"><ellipse cx="12" cy="11" rx="8.5" ry="4.6" fill="#c73b2a"/><circle cx="19.5" cy="7.5" r="3.6" fill="#c73b2a"/><polygon points="22.6,7 27,8.4 22.6,9.6" fill="#e8933a"/><polygon points="4,11 -1,7.5 -1,14" fill="#c73b2a" opacity=".85"/><path class="wingf" d="M8 10 Q13 -1 20 6 Q16 11 8 10 Z" fill="#00000038"/><circle cx="20.6" cy="6.8" r=".9" fill="#241a14"/></svg></span></span>
+      <span class="g-bird rev" style="top:30%;animation-duration:61s;animation-delay:-33s"><span class="bob" style="animation-delay:-1.4s"><svg viewBox="0 0 27 19"><ellipse cx="12" cy="11" rx="8.5" ry="4.6" fill="#f2c04a"/><circle cx="19.5" cy="7.5" r="3.6" fill="#f2c04a"/><polygon points="22.6,7 27,8.4 22.6,9.6" fill="#c9722a"/><polygon points="4,11 -1,7.5 -1,14" fill="#f2c04a" opacity=".85"/><path class="wingf" d="M8 10 Q13 -1 20 6 Q16 11 8 10 Z" fill="#00000038"/><circle cx="20.6" cy="6.8" r=".9" fill="#241a14"/></svg></span></span>
       <div class="heat"></div>
       <div class="g-hot" data-fx-hot="cerezo" style="left:12%;top:38%;width:19%;height:26%"></div>
       <div class="g-hot" data-fx-hot="arce" style="left:37%;top:38%;width:13%;height:22%"></div>
+      <div class="g-hot" data-fx-hot="cerezo" style="left:70.5%;top:51%;width:11%;height:15%"></div>
       <div class="g-hot" data-fx-hot="pinos" style="left:55%;top:40%;width:17%;height:26%"></div>
       <div class="g-hot" data-fx-hot="agua" style="left:33%;top:80%;width:40%;height:20%"></div>
-      <div class="g-hot" data-fx-hot="campana" style="left:44.7%;top:55%;width:8%;height:9%"></div>
+      <div class="g-hot" data-fx-hot="campana" style="left:44.7%;top:52%;width:11%;height:13%"></div>
       ${GAREAS.map(g=>`<div class="g-area" data-ga="${g.id}" style="left:${g.x}%;top:${g.y}%" role="button" aria-label="${g.n}"><span class="dot"></span><span class="lbl">${g.n}</span></div>`).join('')}
       ${charHtml}
       <span class="g-weather">${mx.label}</span>
