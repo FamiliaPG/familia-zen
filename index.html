@@ -734,6 +734,7 @@ function deriveState(events,now){
     case 'act.min': {const a=D.acts.get(e.aid);if(a&&!a.done){a.tier='T1';if(e.title)a.title=e.title}break}
     case 'act.cancel': {const a=D.acts.get(e.aid);if(a&&!a.done)a.canceled=true;break}
     case 'act.done': {const a=D.acts.get(e.aid);if(a&&!a.done)a.done={t:e.t,kpi:e.kpi??null,note:e.note||'',evId:e.id};break}
+    case 'act.undo': {const a=D.acts.get(e.aid);if(a&&a.done&&!a.voided)a.done=null;break}
     case 'garden.move': gardenPos.set(e.m,String(e.area||'').slice(0,20));break;
     case 'day.rest': {const s=rests.get(e.m)||new Set();s.add(e.date);rests.set(e.m,s);break}
     case 'day.hard': {const mm=hards.get(e.m)||new Map();mm.set(e.date,e.note||'');hards.set(e.m,mm);break}
@@ -1555,6 +1556,7 @@ function actDetail(a){
     <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
       ${!done&&!a.voided?`<button class="btn small sec" id="ad-move">Mover de día</button><button class="btn small sec" id="ad-del" style="color:var(--clay)">Eliminar</button>`:''}
       ${!done&&!a.voided&&!a.canceled?`<button class="btn small ghost" id="ad-gcal">📅 Google</button><button class="btn small ghost" id="ad-ics">📅 Apple (.ics)</button>`:''}
+      ${done&&!a.voided&&SESSION===a.m?`<button class="btn small ghost" id="ad-undo">↩ Desmarcar</button>`:''}
       ${done&&SESSION!==a.m?`<button class="btn small sec" id="ad-kudo">💛 Kudo (+15)</button>`:''}
       ${done&&!a.voided&&SESSION!==a.m?`<button class="btn small ghost" id="ad-duda" style="color:var(--clay);border-color:var(--clay)">Plantear duda</button>`:''}
     </div>`);
@@ -1563,6 +1565,11 @@ function actDetail(a){
   q('#ad-del',()=>{if(confirm('¿Eliminar esta actividad?')){appendEvents([{type:'act.cancel',aid:a.aid}]);mb.remove()}});
   q('#ad-gcal',()=>window.open(gcalUrl(a),'_blank'));
   q('#ad-ics',()=>downloadIcs(a));
+  q('#ad-undo',()=>{
+    if(!confirm('¿Desmarcar esta actividad? Volverá a quedar pendiente y los puntos se recalculan solos.'))return;
+    appendEvents([{type:'act.undo',aid:a.aid,m:SESSION}]);mb.remove();
+    toast('↩ Desmarcada — vuelve a estar pendiente');
+  });
   q('#ad-kudo',()=>{
     const wk=monday(dkey(new Date()));
     const given=STATE.events.filter(e=>e.type==='kudo'&&e.m===SESSION&&monday(dkey(new Date(e.t)))===wk).length;
@@ -1624,9 +1631,21 @@ function schedModal({date,edit,goalId}={}){
     if(!title)return toast('Escribe qué harás');
     const dv=$('#s-date',mb).value, tv=$('#s-time',mb).value||null;
     if(!dv)return toast('Elige un día');
-    if(edit)appendEvents([{type:'act.resched',aid:edit.aid,date:dv,time:tv}]);
-    else appendEvents([{type:'act.sched',aid:uid(),m:m.id,goalId:selGoal||null,cat:selCat,title,tier:selTier,date:dv,time:tv}]);
-    mb.remove();toast(edit?'Actividad movida':'Planificada 🌱');
+    if(edit){appendEvents([{type:'act.resched',aid:edit.aid,date:dv,time:tv}]);mb.remove();toast('Actividad movida');return}
+    const na={aid:uid(),m:m.id,goalId:selGoal||null,cat:selCat,title,tier:selTier,date:dv,time:tv};
+    appendEvents([Object.assign({type:'act.sched'},na)]);
+    mb.remove();toast('Planificada 🌱');
+    const cb=modal(`<h3>📆 ¿La añades a tu calendario?</h3>
+      <p class="small muted" style="margin-top:6px">${CATS[selCat].e} ${esc(title)} · ${fmtDate(dv)}${tv?' · '+tv:''}</p>
+      <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+        <button class="btn small sec" id="cb-g">📅 Google</button>
+        <button class="btn small sec" id="cb-a">📅 Apple (.ics)</button>
+        <button class="btn small ghost" id="cb-x">Ahora no</button>
+      </div>
+      <p class="tiny muted" style="margin-top:10px">Consejo: en tu <b>Perfil → 📆 Tu calendario</b> puedes suscribirte una sola vez y todas tus actividades aparecerán solas.</p>`);
+    $('#cb-g',cb).onclick=()=>window.open(gcalUrl(na),'_blank');
+    $('#cb-a',cb).onclick=()=>downloadIcs(na);
+    $('#cb-x',cb).onclick=()=>cb.remove();
   };
 }
 /* ---------- VISTA: CALENDARIO ---------- */
@@ -2939,6 +2958,22 @@ function runTests(){
     ok('T8 nivel 5 en el umbral exacto',levelOf(CONFIG.XP_TH(5))===5&&levelOf(CONFIG.XP_TH(5)-1)===4,'th5='+CONFIG.XP_TH(5));
     ok('T8 banda Bambú a 1200',ritmoTier(1200).n==='Bambú');
     ok('T8 banda Kenshō a 1900',ritmoTier(1900).n.includes('Kenshō'));
+  }
+  // T9: desmarcar (act.undo)
+  {
+    const day=addDays(W0,1);
+    const evs=[...base,
+      {id:'u1',t:ts(addDays(W0,-2)),type:'act.sched',aid:'ua',m:'M1',cat:'ejercicio',title:'x',tier:'T2',date:day},
+      {id:'u2',t:ts(day,9),type:'act.done',aid:'ua'}];
+    const d1=mkFam(evs);
+    ok('T9 completada antes de desmarcar',!!d1.acts.get('ua').done&&d1.acts.get('ua')._pts>0,'pts='+d1.acts.get('ua')._pts);
+    evs.push({id:'u3',t:ts(day,10),type:'act.undo',aid:'ua',m:'M1'});
+    const d2=mkFam(evs);
+    ok('T9 desmarcar devuelve a pendiente',d2.acts.get('ua').done==null);
+    ok('T9 sin puntos tras desmarcar',((d2.perM.get('M1').week.get(W0)||{}).pts||0)===0,'pts='+((d2.perM.get('M1').week.get(W0)||{}).pts||0));
+    evs.push({id:'u4',t:ts(day,11),type:'act.done',aid:'ua'});
+    const d3=mkFam(evs);
+    ok('T9 se puede completar de nuevo',!!d3.acts.get('ua').done&&d3.acts.get('ua')._pts>0);
   }
   const passN=T.filter(t=>t.pass).length;
   $('#main').innerHTML=`<div class="vgap"><h1>Pruebas del motor · ${passN}/${T.length}</h1>
