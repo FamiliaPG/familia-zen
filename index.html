@@ -417,7 +417,7 @@ const CONFIG={
   XP_TH:L=>Math.round(250*Math.pow(L,1.6)), LEVEL_CAP:60,
   SENDA_XP:L=>Math.round(100*Math.pow(L,1.5)),
   GOAL_XP:500, HONOR_XP:100,
-  STREAK_MS:[{d:3,xp:30,e:'🌱',n:'3 días'},{d:5,xp:60,e:'🔥',n:'5 días'},{d:14,xp:150,e:'⚡',n:'2 semanas'},{d:21,xp:250,e:'🌟',n:'3 semanas'},{d:30,xp:500,e:'🏮',n:'1 mes'}],
+  STREAK_MS:[{d:3,xp:30,e:'🌱',n:'3 días'},{d:5,xp:60,e:'🔥',n:'5 días'},{d:7,xp:100,e:'🏵',n:'1 semana'},{d:14,xp:150,e:'⚡',n:'2 semanas'},{d:21,xp:250,e:'🌟',n:'3 semanas'},{d:30,xp:500,e:'🏮',n:'1 mes'},{d:60,xp:750,e:'🌕',n:'2 meses'},{d:100,xp:1500,e:'🐉',n:'100 días'}],
   R0:1200, RBASE:1200, LREF:600, RT_MIN:900, RT_MAX:1700, RFLOOR:800,
   K:{prov:80,u1400:48,u1800:32,over:24,reentry:16}, PROV_WEEKS:6, REENTRY_DAYS:14, REENTRY_FLOOR:-10,
   AMORT:.75, A_MAX:1.10,
@@ -1362,7 +1362,8 @@ function showStreakInfo(){
   modal(`<h3>🔥 Racha diaria: ${pm.dayStreak} ${pm.dayStreak===1?'día':'días'}</h3>
     <p class="small muted">Un día cuenta si completas al menos una actividad <b>planificada con antelación</b>. Los días de descanso planificados no la rompen.</p>
     <div class="row" style="margin-top:10px"><span class="pill">🪨 Piedras de Descanso: ${pm.freezes}</span><span class="pill">📿 Racha semanal: ${pm.weekStreak}</span></div>
-    <p class="tiny muted" style="margin-top:10px">Si fallas un día sin planificar descanso, una Piedra protege tu racha automáticamente. Ganas una piedra cada semana con ≥80% de cumplimiento (máx. ${CONFIG.FREEZE_CAP}).</p>`);
+    <p class="tiny muted" style="margin-top:10px">Si fallas un día sin planificar descanso, una Piedra protege tu racha automáticamente. Ganas una piedra cada semana con ≥80% de cumplimiento (máx. ${CONFIG.FREEZE_CAP}).</p>
+    <p class="tiny" style="margin-top:10px"><b>Premios de racha:</b> ${CONFIG.STREAK_MS.map(x=>`${x.e} ${x.n} +${x.xp}`).join(' · ')} XP. Si la racha se rompe, puedes volver a ganarlos al reconstruirla.</p>`);
 }
 /* ---------- VISTA: HOY ---------- */
 function renderHoy(main,d){
@@ -1539,7 +1540,7 @@ function finishComplete(a,{kpi=null,note=''}={},btn){
   }
   const s1=(d.perM.get(a.m)||{}).dayStreak||0;
   const sms=s1>s0?CONFIG.STREAK_MS.find(x=>x.d===s1):null;
-  if(sms)setTimeout(()=>{confetti(80);chime('up');
+  if(sms)setTimeout(()=>{confetti(sms.d>=30?160:80);chime('up');
     modal(`<div style="text-align:center"><div style="font-size:3rem">${sms.e}</div><h3>¡Racha de ${sms.n}!</h3>
     <p class="small" style="margin-top:6px">${s1} días seguidos completando lo planificado · <b class="gold">+${sms.xp} XP</b></p>
     <p class="tiny muted" style="margin-top:6px">Mira tu progreso de racha en la Liga 🔥</p></div>`)},na&&na._chest?1700:700);
@@ -2060,6 +2061,7 @@ function renderGuia(main,d){
       <p>Cada domingo: podio, coronas por categoría, Corona de Constancia, Más Mejorado y Corazón de la Familia (kudos). Además, la <b>Meta Familiar</b> cooperativa alimenta la Racha Familiar 🏮 y sus recompensas reales.</p></div></details>
     <details class="zen"><summary>🔥 Rachas humanas</summary><div class="inner small muted">
       <p>Racha diaria: completa algo planificado. Puedes marcar hasta 2 <b>días de descanso</b> por semana (antes de que empiecen): no la rompen. Las 🪨 Piedras de Descanso la protegen automáticamente si fallas.</p>
+      <p><b>Premios de racha</b> (XP, re-ganables si la reconstruyes): ${CONFIG.STREAK_MS.map(x=>`${x.e} ${x.n} +${x.xp}`).join(' · ')}. Mira tu progreso en la pestaña Liga.</p>
       <p>La racha semanal nunca se reinicia a cero: si fallas, se <b>parte a la mitad</b>. Y si vuelves tras días fuera, tu primera actividad vale ×2. Aquí nadie te regaña: se vuelve a empezar, siempre.</p></div></details>
     <details class="zen"><summary>🤝 Honestidad</summary><div class="inner small muted">
       <p>Las actividades grandes piden evidencia; las metas piden su KPI. En la reunión se muestran los 3 mejores registros de cada uno. Cualquiera puede plantear una <b>duda</b>: si la familia acuerda que no cuenta, solo se revierten los puntos — sin multas ni castigos. 8 semanas sin anulaciones = insignia <b>Palabra Firme</b> (+2% permanente).</p></div></details>
