@@ -1857,7 +1857,6 @@ function goalDetail(gid){
   const F=(l,v)=>v?`<div style="margin-top:10px"><div class="eyebrow">${l}</div><p class="small" style="margin:3px 0 0">${esc(v)}</p></div>`:'';
   const mb=modal(`<div class="row between">${catChip(g.f.area)}<span class="chip">${est}</span></div>
     <h3 style="margin-top:8px">${esc(g.f.smartFinal||g.f.objetivo||'Meta')}</h3>
-    ${F('Objetivo general',g.f.objetivo)}
     ${F('S · ¿Qué exactamente quiero lograr?',g.f.s)}
     ${F('M · ¿Cómo mediré el progreso/éxito?',g.f.mzbl)}
     ${F('A · ¿Por qué es viable y qué recursos necesito?',g.f.alc)}
@@ -1910,10 +1909,13 @@ function goalEditor(gid){
   let area=g?g.f.area:'salud';
   let actions=g?g.actions.map(a=>({...a})):[];
   const f=g?g.f:{};
+  const parseSf=s=>{const m=/^«?Antes de (.+?), lograré (.+?), medido mediante (.+?), realizando (.+?), porque contribuye a (.+?)\.?»?$/.exec(s||'');if(!m)return null;const cl=x=>/^\[.*\]$/.test(x)?'':x;return {fecha:cl(m[1]),res:cl(m[2]),ind:cl(m[3]),acc:cl(m[4]),prop:cl(m[5])}};
+  const sf=f.sf||parseSf(f.smartFinal)||{fecha:'',res:f.objetivo||'',ind:'',acc:'',prop:''};
+  const sf0=JSON.stringify(sf);
   const mb=modal(`<h3>${g?'Editar meta':'Nueva meta SMART'}</h3>
-    <p class="tiny muted" style="margin-top:4px">Fórmula: «Antes de [FECHA], lograré [RESULTADO], medido con [INDICADOR], haciendo [ACCIONES], porque contribuye a [PROPÓSITO].»</p>
     <label class="field"><span class="lab">Área / Proyecto</span><div class="scroll-x" id="g-cats">${CAT_IDS.map(c=>`<button class="chip ${c===area?'cat':''}" data-cat="${c}" style="${c===area?`background:${CATS[c].c}`:''}">${CATS[c].e} ${CATS[c].n}</button>`).join('')}</div></label>
-    <label class="field"><span class="lab">Objetivo general</span><input id="g-obj" value="${esc(f.objetivo||'')}" placeholder="Ej. Mejorar mi condición física"></label>
+    <label class="field"><span class="lab">SMART Goal final ✍️</span>
+      <p style="font-family:var(--font-d);font-weight:700;margin:6px 0 0;font-size:.95rem;line-height:2.2">«Antes de <input class="fml" id="gf-fecha" placeholder="fecha" value="${esc(sf.fecha||'')}">, lograré <input class="fml" id="gf-res" placeholder="resultado específico" value="${esc(sf.res||'')}">, medido mediante <input class="fml" id="gf-ind" placeholder="indicador o métrica" value="${esc(sf.ind||'')}">, realizando <input class="fml" id="gf-acc" placeholder="acciones clave" value="${esc(sf.acc||'')}">, porque contribuye a <input class="fml" id="gf-prop" placeholder="propósito o prioridad" value="${esc(sf.prop||'')}">.»</p></label>
     <label class="field"><span class="lab">S · Específico — ¿qué exactamente quiero lograr?</span><textarea id="g-s" rows="2">${esc(f.s||'')}</textarea></label>
     <label class="field"><span class="lab">M · Medible — ¿cómo mediré el progreso/éxito?</span><textarea id="g-m" rows="2">${esc(f.mzbl||'')}</textarea></label>
     <label class="field"><span class="lab">A · Alcanzable — ¿por qué es viable y qué recursos necesito?</span><textarea id="g-a" rows="2">${esc(f.alc||'')}</textarea></label>
@@ -1922,16 +1924,13 @@ function goalEditor(gid){
       <label class="field"><span class="lab">T · Fecha límite</span><input id="g-t" type="date" value="${f.fechaLimite||''}"></label>
       <label class="field"><span class="lab">Estado</span><select id="g-est">${['No iniciado','En progreso','En pausa'].map(x=>`<option ${(f.estado||'En progreso')===x?'selected':''}>${x}</option>`).join('')}</select></label>
     </div>
-    <label class="field"><span class="lab">SMART Goal final ✍️</span><textarea id="g-final" rows="2" placeholder="Antes del 30 de nov, lograré…">${esc(f.smartFinal||'')}</textarea></label>
     <div class="grid2">
       <label class="field"><span class="lab">Indicador / KPI (unidad)</span><input id="g-kpiu" value="${esc(f.kpiUnit||'')}" placeholder="km · páginas · sesiones"></label>
       <label class="field"><span class="lab">KPI objetivo</span><input id="g-kpit" inputmode="numeric" value="${f.kpiTarget||''}" placeholder="Ej. 100"></label>
     </div>
     <div class="hr"></div>
     <div class="eyebrow">El juego 🎋</div>
-    <label class="field"><span class="lab">Identidad — «Yo soy…» (se muestra al completar)</span><input id="g-id" value="${esc(f.identidad||'')}" placeholder="Soy alguien que se mueve todos los días"></label>
-    <label class="field"><span class="lab">Versión mínima — tu acción de 2 minutos para días difíciles</span><input id="g-min" value="${esc(f.minVersion||'')}" placeholder="Ej. Caminar 5 minutos"></label>
-    <label class="field"><span class="lab">Emparejar con — un gusto solo durante la actividad</span><input id="g-emp" value="${esc(f.emparejar||'')}" placeholder="Ej. mi podcast favorito"></label>
+    <label class="field"><span class="lab">Plan B de 2 minutos — versión mini de tu meta para días difíciles</span><input id="g-min" value="${esc(f.minVersion||'')}" placeholder="Ej. Caminar 5 minutos"></label>
     <label class="field"><span class="lab">Acciones / próximos pasos (cada línea se puede planificar)</span>
       <div class="vgap" id="g-acts"></div>
       <div class="row" style="margin-top:8px;gap:6px"><input id="g-newact" placeholder="Ej. Correr 30 min" style="flex:2">
@@ -1940,6 +1939,7 @@ function goalEditor(gid){
     <label class="field"><span class="lab">Notas / revisión</span><textarea id="g-notas" rows="2">${esc(g?g.notas:'')}</textarea></label>
     <button class="btn big" style="margin-top:14px" id="g-go">${g?'Guardar':'Crear meta 🎯'}</button>`);
   mb.classList.add('sticky');
+  $$('.fml',mb).forEach(i=>{const fit=()=>{i.style.width=Math.min(40,Math.max(i.placeholder.length,i.value.length)+2)+'ch'};i.oninput=fit;fit()});
   const paintActs=()=>{$('#g-acts',mb).innerHTML=actions.map((a,i)=>`
     <div class="row small" style="background:var(--surface2);border-radius:10px;padding:7px 10px"><span class="grow">${esc(a.title)}</span>${tierBadge(a.tier)}<button data-rm="${i}" style="color:var(--clay);font-weight:700;padding:0 4px">✕</button></div>`).join('');
     $$('#g-acts [data-rm]',mb).forEach(b=>b.onclick=()=>{actions.splice(+b.dataset.rm,1);paintActs()})};
@@ -1950,14 +1950,20 @@ function goalEditor(gid){
     $$('#g-cats .chip',mb).forEach(x=>{const on=x.dataset.cat===area;x.className='chip'+(on?' cat':'');x.style.background=on?CATS[area].c:''})};
   $('#g-go',mb).onclick=()=>{
     const v=id=>$(id,mb).value.trim();
-    const obj=v('#g-obj');
-    if(!obj)return toast('Escribe el objetivo general');
+    const sfv={fecha:v('#gf-fecha'),res:v('#gf-res'),ind:v('#gf-ind'),acc:v('#gf-acc'),prop:v('#gf-prop')};
+    if(!sfv.res)return toast('Completa al menos «resultado específico» en tu SMART Goal');
     if(!v('#g-s'))return toast('Completa la S: ¿qué exactamente quieres lograr?');
     if(!v('#g-m'))return toast('Completa la M: sin medida no hay bono de meta');
-    const fields={area,objetivo:obj,s:v('#g-s'),mzbl:v('#g-m'),alc:v('#g-a'),rel:v('#g-r'),
-      fechaLimite:$('#g-t',mb).value||null,estado:$('#g-est',mb).value,smartFinal:v('#g-final'),
+    let smartFinal=f.smartFinal||'',objetivo=f.objetivo||'';
+    if(JSON.stringify(sfv)!==sf0||!smartFinal){
+      const P=(x,ph)=>x||ph;
+      smartFinal=`Antes de ${P(sfv.fecha,'[FECHA]')}, lograré ${sfv.res}, medido mediante ${P(sfv.ind,'[INDICADOR]')}, realizando ${P(sfv.acc,'[ACCIONES]')}, porque contribuye a ${P(sfv.prop,'[PROPÓSITO]')}.`;
+      objetivo=sfv.res;
+    }
+    const fields={area,objetivo,s:v('#g-s'),mzbl:v('#g-m'),alc:v('#g-a'),rel:v('#g-r'),
+      fechaLimite:$('#g-t',mb).value||null,estado:$('#g-est',mb).value,smartFinal,sf:sfv,
       kpiUnit:v('#g-kpiu'),kpiTarget:+$('#g-kpit',mb).value||null,
-      identidad:v('#g-id'),minVersion:v('#g-min'),emparejar:v('#g-emp'),notas:v('#g-notas'),
+      minVersion:v('#g-min'),notas:v('#g-notas'),
       progreso:g?progresoAt(g,Date.now()):0};
     if(g)appendEvents([{type:'goal.update',gid,f:fields,actions}]);
     else appendEvents([{type:'goal.create',gid:uid(),m:SESSION,f:fields,actions}]);
