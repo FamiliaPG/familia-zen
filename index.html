@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Familia PG Espacio Zen">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%23EFF1EA'/%3E%3Cg fill='none' stroke='%2333684B' stroke-linecap='round'%3E%3Cpath d='M92 82A42 42 0 1 1 98 42' stroke-width='8'/%3E%3Cpath d='M55 38C53 52 53 72 51 86' stroke-width='9'/%3E%3Cpath d='M56 38C64 35.5 72 35 79 36' stroke-width='9'/%3E%3Cpath d='M53.5 60C60 58.5 66 58.3 72 58.6' stroke-width='8'/%3E%3C/g%3E%3Cpath d='M81 34Q87 21 100 22Q94 35 81 34Z' fill='%23D9A62E'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%23EFF1EA'/%3E%3Cpath d='M92 82A42 42 0 1 1 98 42' fill='none' stroke='%2333684B' stroke-width='8' stroke-linecap='round'/%3E%3Cg transform='translate(60 60) scale(.92) translate(-56 -58)'%3E%3Cpath d='M77 32C69 21 58 25 55 38C49 52 49 70 45 82C43 90 37 90 34 84C37 87 41 86 45.5 79.5C55 70 59 52 62 38C65 31 70 29 77 32Z' fill='%2333684B'/%3E%3Cpath d='M40 60C50 56 60 54 70 53.5' fill='none' stroke='%2333684B' stroke-width='6.2' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E">
 <title>Familia PG Espacio Zen</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1124,7 +1124,7 @@ const setSession=id=>{SESSION=id;try{localStorage.setItem(LSDEV,JSON.stringify({
 function me(){const d=D();return SESSION?d.members.get(SESSION):null}
 function myPM(){const d=D();return SESSION?d.perM.get(SESSION):null}
 
-const ensoSvg=(c='var(--verde)')=>`<svg class="enso" viewBox="10 10 102 102" fill="none"><path d="M92 82A42 42 0 1 1 98 42" stroke="${c}" stroke-width="8" stroke-linecap="round"/><path d="M55 38C53 52 53 72 51 86" stroke="${c}" stroke-width="9" stroke-linecap="round"/><path d="M56 38C64 35.5 72 35 79 36" stroke="${c}" stroke-width="9" stroke-linecap="round"/><path d="M53.5 60C60 58.5 66 58.3 72 58.6" stroke="${c}" stroke-width="8" stroke-linecap="round"/><path d="M81 34Q87 21 100 22Q94 35 81 34Z" fill="var(--kin-bright)"/></svg>`;
+const ensoSvg=(c='var(--verde)')=>`<svg class="enso" viewBox="12 12 96 96" fill="none"><path d="M92 82A42 42 0 1 1 98 42" stroke="${c}" stroke-width="8" stroke-linecap="round"/><g transform="translate(60 60) scale(.92) translate(-56 -58)"><path d="M77 32C69 21 58 25 55 38C49 52 49 70 45 82C43 90 37 90 34 84C37 87 41 86 45.5 79.5C55 70 59 52 62 38C65 31 70 29 77 32Z" fill="${c}"/><path d="M40 60C50 56 60 54 70 53.5" stroke="${c}" stroke-width="6.2" stroke-linecap="round"/></g></svg>`;
 const ICONS={
   hoy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg>',
   cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="16" rx="3.5"/><path d="M3.5 10h17M8 2.8V6.5M16 2.8V6.5"/><circle cx="8.5" cy="14.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
@@ -1975,8 +1975,9 @@ function renderGuia(main,d){
       </table></div>
     </div>
     <div class="card" style="background:var(--verde-wash)">
-      <div class="eyebrow">Fórmula práctica</div>
-      <p style="font-family:var(--font-d);font-weight:700;margin-top:6px;font-size:.95rem">«Antes de [FECHA], lograré [RESULTADO ESPECÍFICO], medido mediante [INDICADOR/MÉTRICA], realizando [ACCIONES CLAVE], porque contribuye a [PROPÓSITO / PRIORIDAD].»</p>
+      <div class="row between" style="gap:8px"><div class="eyebrow">Fórmula práctica para metas SMART</div>
+        <button class="btn small sec" data-a="copyform" style="flex:none">📋 Copiar</button></div>
+      <p id="formula-txt" style="font-family:var(--font-d);font-weight:700;margin-top:6px;font-size:.95rem">«Antes de [FECHA], lograré [RESULTADO ESPECÍFICO], medido mediante [INDICADOR/MÉTRICA], realizando [ACCIONES CLAVE], porque contribuye a [PROPÓSITO / PRIORIDAD].»</p>
     </div>
     <div class="card">
       <div class="eyebrow">Recomendación de uso</div>
@@ -2007,6 +2008,12 @@ function renderGuia(main,d){
     <details class="zen"><summary>🤝 Honestidad</summary><div class="inner small muted">
       <p>Las actividades grandes piden evidencia; las metas piden su KPI. En la reunión se muestran los 3 mejores registros de cada uno. Cualquiera puede plantear una <b>duda</b>: si la familia acuerda que no cuenta, solo se revierten los puntos — sin multas ni castigos. 8 semanas sin anulaciones = insignia <b>Palabra Firme</b> (+2% permanente).</p></div></details>
   </div>`;
+  const cb=$('[data-a=copyform]',main);
+  if(cb)cb.onclick=async()=>{
+    const t=$('#formula-txt',main).textContent.replace(/^«|»$/g,'');
+    try{await navigator.clipboard.writeText(t);toast('Fórmula copiada 📋')}
+    catch(_e){prompt('Copia la fórmula:',t)}
+  };
 }
 /* ---------- VISTA: LIGA ---------- */
 function renderLiga(main,d){
