@@ -748,6 +748,7 @@ function deriveState(events,now){
         if('notas' in e.f)g.notas=e.f.notas;
         if(e.f.honorClosed)g.honorClosed=true;}
       if(e.actions)g.actions=e.actions;break}
+    case 'goal.delete': {const g=D.goals.get(e.gid);if(g){g.deleted=true;g.estadoLog.push({t:e.t,v:'En pausa'})}break}
     case 'act.sched': D.acts.set(e.aid,{aid:e.aid,m:e.m,goalId:e.goalId||null,cat:e.cat,title:e.title,tier:e.tier,date:e.date,time:e.time||null,end:(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null,notes:e.notes?String(e.notes).slice(0,300):'',grp:e.grp||null,schedT:e.t,rescheduled:false,done:null,voided:false,canceled:false,evId:e.id});break;
     case 'act.resched': {const a=D.acts.get(e.aid);if(a&&!a.done){a.date=e.date;a.time=e.time||a.time;if('end' in e)a.end=(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null;if('notes' in e)a.notes=e.notes?String(e.notes).slice(0,300):'';a.rescheduled=true;a.reschedT=e.t}break}
     case 'act.min': {const a=D.acts.get(e.aid);if(a&&!a.done){a.tier='T1';if(e.title)a.title=e.title}break}
@@ -1624,6 +1625,7 @@ function schedModal({date,edit,goalId}={}){
   const d=D(),m=me();
   const goals=[...d.goals.values()].filter(g=>g.m===m.id&&['En progreso','No iniciado'].includes(estadoAt(g,Date.now())));
   let selGoal=edit?(edit.goalId||''):goalId||'';
+  if(selGoal&&!d.goals.get(selGoal))selGoal='';
   let selCat=edit?edit.cat:(selGoal?d.goals.get(selGoal).f.area:'ejercicio');
   let selTier=edit?edit.tier:'T2';
   const dateV=edit?edit.date:(date||d.todayK);
@@ -1801,7 +1803,7 @@ let METAS_FILTER=null;
 function renderMetas(main,d){
   if(METAS_FILTER===null)METAS_FILTER=SESSION;
   const mems=[...d.members.values()];
-  const goals=[...d.goals.values()].filter(g=>METAS_FILTER==='all'||g.m===METAS_FILTER).sort((a,b)=>{
+  const goals=[...d.goals.values()].filter(g=>!g.deleted&&(METAS_FILTER==='all'||g.m===METAS_FILTER)).sort((a,b)=>{
     const rank={'En progreso':0,'No iniciado':1,'En pausa':2,'Completado':3};
     return (rank[estadoAt(a,Date.now())]-rank[estadoAt(b,Date.now())])||b.createdT-a.createdT});
   main.innerHTML=`<div class="vgap">
@@ -1939,9 +1941,25 @@ function goalEditor(gid){
       <select id="g-newtier" style="flex:1">${Object.keys(CONFIG.BASE).map(t=>`<option value="${t}" ${t==='T2'?'selected':''}>${CONFIG.TIER_NAMES[t]}</option>`).join('')}</select>
       <button class="btn small sec" id="g-addact">＋</button></div></label>
     <label class="field"><span class="lab">Notas / revisión</span><textarea id="g-notas" rows="2">${esc(g?g.notas:'')}</textarea></label>
-    <button class="btn big" style="margin-top:14px" id="g-go">${g?'Guardar':'Crear meta 🎯'}</button>`);
+    <button class="btn big" style="margin-top:14px" id="g-go">${g?'Guardar':'Crear meta 🎯'}</button>
+    ${g?`<button class="btn big ghost" style="margin-top:8px;color:var(--clay);border-color:color-mix(in srgb,var(--clay) 40%,transparent)" id="g-del">🗑 Borrar esta meta</button>`:''}`);
   mb.classList.add('sticky');
   $$('.fml',mb).forEach(i=>{const fit=()=>{i.style.width=Math.min(40,Math.max(i.placeholder.length,i.value.length)+2)+'ch'};i.oninput=fit;fit()});
+  const gdel=$('#g-del',mb);
+  if(gdel)gdel.onclick=()=>{
+    const cm=modal(`<h3>¿Borrar esta meta? 🗑</h3>
+      <p class="small muted" style="margin-top:6px">Se quitará de tus listas y del historial de metas. Los puntos y actividades ya registrados se conservan. Esta acción no se puede deshacer.</p>
+      <p class="small" style="margin-top:6px">Si la meta ya no va pero intentarla te dejó algo, mejor usa <b>«Cerrar con honor»</b> desde el detalle: guarda el aprendizaje y suma +100 XP.</p>
+      <div class="row" style="margin-top:14px;gap:8px">
+        <button class="btn sec grow" id="gd-no">Cancelar</button>
+        <button class="btn grow" id="gd-yes" style="background:var(--clay)">Borrar</button>
+      </div>`);
+    $('#gd-no',cm).onclick=()=>cm.remove();
+    $('#gd-yes',cm).onclick=()=>{
+      appendEvents([{type:'goal.delete',gid}]);
+      $('#modal-root').innerHTML='';rerender();toast('Meta borrada 🗑');
+    };
+  };
   $('#g-kpihelp',mb).onclick=e=>{e.preventDefault();
     modal(`<h3>¿Qué es un KPI? 📈</h3>
       <p class="small muted" style="margin-top:6px">KPI significa «indicador clave de progreso»: el número con el que medirás tu meta.</p>
@@ -2563,7 +2581,7 @@ function renderJardin(main,d){
 /* ---------- VISTA: PERFIL ---------- */
 function renderPerfil(main,d){
   const m=me(),pm=myPM();
-  const trophies=[...d.goals.values()].filter(g=>g.m===m.id&&g.completedT);
+  const trophies=[...d.goals.values()].filter(g=>!g.deleted&&g.m===m.id&&g.completedT);
   const kudosGiven=STATE.events.filter(e=>e.type==='kudo'&&e.m===m.id&&monday(dkey(new Date(e.t)))===d.curWk).length;
   const sendasEarned=Object.entries(pm.sendaLv||{}).filter(([,l])=>l>=1).sort((a,b)=>b[1]-a[1]);
   let themeNow='';try{themeNow=localStorage.getItem(window.FZTHEMEKEY)||''}catch(e){}
@@ -2872,7 +2890,7 @@ function actRitmo(st,d){
       </div>`}).join('')}</div></div>`;
 }
 function actMetas(st,d){
-  const goals=[...d.goals.values()].filter(g=>['En progreso','En pausa','No iniciado'].includes(estadoAt(g,Date.now())));
+  const goals=[...d.goals.values()].filter(g=>!g.deleted&&['En progreso','En pausa','No iniciado'].includes(estadoAt(g,Date.now())));
   st.innerHTML=`<div style="width:100%;max-width:680px"><div class="eyebrow" style="font-size:.85rem">Acto 7 · Objetivos SMART</div>
     <h2 class="ptitle" style="margin-top:8px">¿Cómo van las metas?</h2>
     <div class="vgap" style="margin-top:20px;text-align:left">
@@ -3103,6 +3121,22 @@ function runTests(){
     evs.push({id:'u4',t:ts(day,11),type:'act.done',aid:'ua'});
     const d3=mkFam(evs);
     ok('T9 se puede completar de nuevo',!!d3.acts.get('ua').done&&d3.acts.get('ua')._pts>0);
+  }
+  // T11: borrar meta (goal.delete)
+  {
+    const day=addDays(W0,1);
+    const evs=[...base,
+      {id:'g1',t:ts(W0,8),type:'goal.create',gid:'G1',m:'M1',f:{area:'ejercicio',objetivo:'correr',s:'x',mzbl:'y',estado:'En progreso'},actions:[]},
+      {id:'ga',t:ts(W0,9),type:'act.sched',aid:'da',m:'M1',cat:'ejercicio',title:'trotar',tier:'T2',date:day,goalId:'G1'},
+      {id:'gd',t:ts(day,10),type:'act.done',aid:'da'}];
+    const d1=mkFam(evs);
+    const pts1=(d1.perM.get('M1').week.get(W0)||{}).pts||0;
+    ok('T11 meta existe y da puntos',d1.goals.has('G1')&&pts1>0,'pts='+pts1);
+    evs.push({id:'gx',t:ts(day,12),type:'goal.delete',gid:'G1'});
+    const d2=mkFam(evs);
+    ok('T11 meta marcada como borrada',d2.goals.get('G1')&&d2.goals.get('G1').deleted===true);
+    const pts2=(d2.perM.get('M1').week.get(W0)||{}).pts||0;
+    ok('T11 puntos ganados se conservan',pts2===pts1,'antes='+pts1+' después='+pts2);
   }
   const passN=T.filter(t=>t.pass).length;
   $('#main').innerHTML=`<div class="vgap"><h1>Pruebas del motor · ${passN}/${T.length}</h1>
