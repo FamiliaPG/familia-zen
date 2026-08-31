@@ -1982,8 +1982,11 @@ function renderGuia(main,d){
       </table></div>
     </div>
     <div class="card" style="background:var(--verde-wash)">
-      <div class="row between" style="gap:8px"><div class="eyebrow">Fórmula práctica para metas SMART</div>
-        <button class="btn small sec" data-a="copyform" style="flex:none;color:var(--verde-ink)">📋 Copiar</button></div>
+      <div class="row between" style="gap:8px;flex-wrap:wrap"><div class="eyebrow">Fórmula práctica para metas SMART</div>
+        <div class="row" style="gap:6px;flex:none">
+          <button class="btn small sec" data-a="resetform" style="color:var(--verde-ink)">↺ Limpiar</button>
+          <button class="btn small sec" data-a="copyform" style="color:var(--verde-ink)">📋 Copiar</button>
+        </div></div>
       <p id="formula-txt" style="font-family:var(--font-d);font-weight:700;margin-top:8px;font-size:.95rem;line-height:2.2">«Antes de <input class="fml" id="f-fecha" placeholder="fecha">, lograré <input class="fml" id="f-res" placeholder="resultado específico">, medido mediante <input class="fml" id="f-ind" placeholder="indicador o métrica">, realizando <input class="fml" id="f-acc" placeholder="acciones clave">, porque contribuye a <input class="fml" id="f-prop" placeholder="propósito o prioridad">.»</p>
       <p class="tiny muted" style="margin-top:6px">Completa los espacios y toca 📋 Copiar para llevarte tu meta lista.</p>
     </div>
@@ -2027,6 +2030,11 @@ function renderGuia(main,d){
     const t=`Antes de ${g('#f-fecha','[FECHA]')}, lograré ${g('#f-res','[RESULTADO ESPECÍFICO]')}, medido mediante ${g('#f-ind','[INDICADOR/MÉTRICA]')}, realizando ${g('#f-acc','[ACCIONES CLAVE]')}, porque contribuye a ${g('#f-prop','[PROPÓSITO / PRIORIDAD]')}.`;
     try{await navigator.clipboard.writeText(t);toast('Fórmula copiada 📋')}
     catch(_e){prompt('Copia la fórmula:',t)}
+  };
+  const rb=$('[data-a=resetform]',main);
+  if(rb)rb.onclick=()=>{
+    $$('.fml',main).forEach(i=>{i.value='';delete FORMULA_DRAFT[i.id];i.style.width=Math.min(40,i.placeholder.length+2)+'ch'});
+    toast('Fórmula en blanco ↺');
   };
 }
 /* ---------- VISTA: LIGA ---------- */
