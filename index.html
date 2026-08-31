@@ -1472,7 +1472,7 @@ function actCard(a,d){
       <div class="row tiny muted" style="gap:7px;margin-top:2px;flex-wrap:wrap">
         ${a.time?`<span>🕐 ${a.time}${a.end?'–'+a.end:''}</span>`:''}
         ${tierBadge(a.tier)}
-        ${g?`<span title="Vinculada a meta">🎯 ${esc((g.f.smartFinal||g.f.objetivo||'Meta').slice(0,24))}</span>`:''}
+        ${g?`<span title="Vinculada a meta">🎯 ${esc((g.f.objetivo||g.f.smartFinal||'Meta').slice(0,24))}</span>`:''}
         ${improvised?'<span title="No planificada con antelación">⚡ improvisada · 50%</span>':''}
         ${a.rescheduled?'<span>↻ 70%</span>':''}
         ${done?`<b class="gold num">+${a._pts??''} pts</b>`:''}
@@ -1633,7 +1633,7 @@ function schedModal({date,edit,goalId}={}){
   const mb=modal(`<h3>${edit?'Editar actividad':'Planificar actividad'}</h3>
     <label class="field"><span class="lab">Meta vinculada <span class="gold">(+25%)</span></span>
       <select id="s-goal"><option value="">— Sin meta (máx. 4/día) —</option>
-      ${goals.map(g=>`<option value="${g.gid}" ${g.gid===selGoal?'selected':''}>${CATS[g.f.area].e} ${esc((g.f.smartFinal||g.f.objetivo||'Meta').slice(0,40))}</option>`).join('')}</select></label>
+      ${goals.map(g=>`<option value="${g.gid}" ${g.gid===selGoal?'selected':''}>${CATS[g.f.area].e} ${esc((g.f.objetivo||g.f.smartFinal||'Meta').slice(0,40))}</option>`).join('')}</select></label>
     <div id="s-tpls" class="scroll-x" style="margin-top:8px">${tplOpts(selGoal?d.goals.get(selGoal):null)}</div>
     <label class="field"><span class="lab">¿Qué harás?</span><input id="s-title" value="${edit?esc(edit.title):''}" placeholder="Ej. Correr 30 minutos" maxlength="60"></label>
     <label class="field"><span class="lab">Categoría</span><div class="scroll-x" id="s-cats">${CAT_IDS.map(c=>`<button class="chip ${c===selCat?'cat':''}" data-cat="${c}" style="${c===selCat?`background:${CATS[c].c}`:''}">${CATS[c].e} ${CATS[c].n}</button>`).join('')}</div></label>
@@ -2613,7 +2613,7 @@ function renderPerfil(main,d){
         <div class="badgecell"><span class="bic">${CATS[c].e}</span><b class="tiny">${sendaTitle(c,l)}</b><span class="tiny muted">${CATS[c].n} · Nv ${l}</span></div>`).join('')}</div></div>`:''}
     ${trophies.length?`<div class="card"><h3 class="small">🏆 Salón de Trofeos</h3>
       <div class="vgap" style="margin-top:8px">${trophies.map(g=>`
-        <div class="row small"><span>${g.honorClosed?'🙏':'🏆'}</span><span class="grow">${esc(g.f.smartFinal||g.f.objetivo)}</span><span class="tiny muted">${fmtDate(dkey(new Date(g.completedT)))}</span></div>`).join('')}</div></div>`:''}
+        <div class="row small"><span>${g.honorClosed?'🙏':'🏆'}</span><span class="grow">${esc(g.f.objetivo||g.f.smartFinal)}</span><span class="tiny muted">${fmtDate(dkey(new Date(g.completedT)))}</span></div>`).join('')}</div></div>`:''}
     <div class="card">
       <div class="row between"><h3 class="small">🎖 Insignias · ${pm.badges.size}/${BADGES.length}</h3><span class="tiny muted">💛 ${CONFIG.KUDOS_WEEK-kudosGiven} kudos restantes esta semana</span></div>
       <div class="grid3" style="margin-top:10px">
@@ -2899,7 +2899,7 @@ function actMetas(st,d){
       const days=g.f.fechaLimite?Math.ceil((dayStart(g.f.fechaLimite)-Date.now())/864e5):null;
       const stale=est==='En pausa';
       return `<div class="card" style="padding:13px;border-left:4px solid ${CATS[g.f.area].c}">
-        <div class="row">${avatarHtml(m,30)}<b class="small grow">${esc(g.f.smartFinal||g.f.objetivo)}</b>
+        <div class="row">${avatarHtml(m,30)}<b class="small grow">${esc(g.f.objetivo||g.f.smartFinal)}</b>
           <span class="chip">${est}</span></div>
         <div class="row" style="margin-top:8px;gap:10px">
           <input type="range" min="0" max="100" step="5" value="${prog}" data-gprog="${g.gid}" style="flex:1;padding:0;accent-color:var(--verde)">
@@ -2965,7 +2965,7 @@ function schedModalFor(mid,weekStart){
   let selTier='T2',selCat=goals[0]?goals[0].f.area:'ejercicio',selGoal=goals[0]?goals[0].gid:'';
   const mb=modal(`<div class="row">${avatarHtml(m,36)}<h3>Plan de ${esc(m.name)}</h3></div>
     <label class="field"><span class="lab">Meta</span><select id="mf-goal"><option value="">— libre —</option>
-      ${goals.map(g=>`<option value="${g.gid}" ${g.gid===selGoal?'selected':''}>${CATS[g.f.area].e} ${esc((g.f.smartFinal||g.f.objetivo).slice(0,36))}</option>`).join('')}</select></label>
+      ${goals.map(g=>`<option value="${g.gid}" ${g.gid===selGoal?'selected':''}>${CATS[g.f.area].e} ${esc((g.f.objetivo||g.f.smartFinal).slice(0,36))}</option>`).join('')}</select></label>
     <label class="field"><span class="lab">Actividad</span><input id="mf-title" placeholder="Ej. Leer 20 min"></label>
     <div class="grid3">
       <label class="field"><span class="lab">Día</span><select id="mf-day">${Array.from({length:7},(_,i)=>`<option value="${addDays(weekStart,i)}">${fmtDate(addDays(weekStart,i))}</option>`).join('')}</select></label>
