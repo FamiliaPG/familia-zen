@@ -106,6 +106,8 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 .bar>i{display:block;height:100%;border-radius:99px;background:var(--verde);transition:width .6s cubic-bezier(.2,.8,.2,1)}
 .bar.gold>i{background:linear-gradient(90deg,var(--kin-bright),var(--kin))}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2>*{min-width:0}
+input[type=date]{min-width:0;max-width:100%}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .scroll-x{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .scroll-x::-webkit-scrollbar{display:none}
@@ -1957,7 +1959,19 @@ function goalEditor(gid){
     <button class="btn big" style="margin-top:14px" id="g-go">${g?'Guardar':'Crear meta 🎯'}</button>
     ${g?`<button class="btn big ghost" style="margin-top:8px;color:var(--clay);border-color:color-mix(in srgb,var(--clay) 40%,transparent)" id="g-del">🗑 Borrar esta meta</button>`:''}`);
   mb.classList.add('sticky');
-  $$('.fml',mb).forEach(i=>{const fit=()=>{i.style.width=Math.min(40,Math.max(i.placeholder.length,i.value.length)+2)+'ch'};i.oninput=fit;fit()});
+  const fitFml=i=>{i.style.width=Math.min(40,Math.max(i.placeholder.length,i.value.length)+2)+'ch'};
+  $$('.fml',mb).forEach(i=>{i.oninput=()=>fitFml(i);fitFml(i)});
+  // sincronía en dos direcciones: espacios de la fórmula ↔ campos S/M/R
+  [['#gf-res','#g-s'],['#gf-ind','#g-m'],['#gf-prop','#g-r']].forEach(([fa,fb])=>{
+    const ia=$(fa,mb),ib=$(fb,mb);
+    ia.addEventListener('input',()=>{ib.value=ia.value});
+    ib.addEventListener('input',()=>{ia.value=ib.value;fitFml(ia)});
+  });
+  // elegir T · Fecha límite escribe la fecha en la oración
+  $('#g-t',mb).addEventListener('change',()=>{
+    const v=$('#g-t',mb).value;if(!v)return;
+    const ff=$('#gf-fecha',mb);ff.value=fmtLong(v);fitFml(ff);
+  });
   const gdel=$('#g-del',mb);
   if(gdel)gdel.onclick=()=>{
     const cm=modal(`<h3>¿Borrar esta meta? 🗑</h3>
