@@ -116,6 +116,8 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 .checkbtn:active{transform:scale(.9)}
 .checkbtn.on{background:var(--verde);border-color:var(--verde);color:#fff}
 .tierchip{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--kin-wash);color:var(--kin);border:1px solid color-mix(in srgb,var(--kin) 30%,transparent)}
+.fml{display:inline-block;width:12ch;max-width:100%;background:transparent;border:none;border-bottom:2px dashed color-mix(in srgb,var(--verde) 50%,transparent);border-radius:0;padding:1px 4px;color:var(--verde-ink);text-align:center}
+.fml:focus{border-bottom:2px solid var(--verde);box-shadow:none}
 
 /* modal */
 #modal-root:empty{display:none}
@@ -1959,6 +1961,7 @@ function goalEditor(gid){
   };
 }
 /* ---------- VISTA: GUÍA ---------- */
+const FORMULA_DRAFT={};
 function renderGuia(main,d){
   const row=(l,c,def,q)=>`<tr><td><b style="font-family:var(--font-d);font-size:1.1rem;color:var(--verde)">${l}</b></td><td><b>${c}</b><p class="small muted" style="margin:4px 0 6px">${def}</p><p class="tiny" style="color:var(--verde-ink)">${q}</p></td></tr>`;
   main.innerHTML=`<div class="vgap">
@@ -1977,7 +1980,8 @@ function renderGuia(main,d){
     <div class="card" style="background:var(--verde-wash)">
       <div class="row between" style="gap:8px"><div class="eyebrow">Fórmula práctica para metas SMART</div>
         <button class="btn small sec" data-a="copyform" style="flex:none;color:var(--verde-ink)">📋 Copiar</button></div>
-      <p id="formula-txt" style="font-family:var(--font-d);font-weight:700;margin-top:6px;font-size:.95rem">«Antes de [FECHA], lograré [RESULTADO ESPECÍFICO], medido mediante [INDICADOR/MÉTRICA], realizando [ACCIONES CLAVE], porque contribuye a [PROPÓSITO / PRIORIDAD].»</p>
+      <p id="formula-txt" style="font-family:var(--font-d);font-weight:700;margin-top:8px;font-size:.95rem;line-height:2.2">«Antes de <input class="fml" id="f-fecha" placeholder="fecha">, lograré <input class="fml" id="f-res" placeholder="resultado específico">, medido mediante <input class="fml" id="f-ind" placeholder="indicador o métrica">, realizando <input class="fml" id="f-acc" placeholder="acciones clave">, porque contribuye a <input class="fml" id="f-prop" placeholder="propósito o prioridad">.»</p>
+      <p class="tiny muted" style="margin-top:6px">Completa los espacios y toca 📋 Copiar para llevarte tu meta lista.</p>
     </div>
     <div class="card">
       <div class="eyebrow">Recomendación de uso</div>
@@ -2008,9 +2012,15 @@ function renderGuia(main,d){
     <details class="zen"><summary>🤝 Honestidad</summary><div class="inner small muted">
       <p>Las actividades grandes piden evidencia; las metas piden su KPI. En la reunión se muestran los 3 mejores registros de cada uno. Cualquiera puede plantear una <b>duda</b>: si la familia acuerda que no cuenta, solo se revierten los puntos — sin multas ni castigos. 8 semanas sin anulaciones = insignia <b>Palabra Firme</b> (+2% permanente).</p></div></details>
   </div>`;
+  $$('.fml',main).forEach(i=>{
+    if(FORMULA_DRAFT[i.id])i.value=FORMULA_DRAFT[i.id];
+    const fit=()=>{i.style.width=Math.min(40,Math.max(i.placeholder.length,i.value.length)+2)+'ch'};
+    i.oninput=()=>{FORMULA_DRAFT[i.id]=i.value;fit()};fit();
+  });
   const cb=$('[data-a=copyform]',main);
   if(cb)cb.onclick=async()=>{
-    const t=$('#formula-txt',main).textContent.replace(/^«|»$/g,'');
+    const g=(s,ph)=>{const el=$(s,main);const v=el?el.value.trim():'';return v||ph};
+    const t=`Antes de ${g('#f-fecha','[FECHA]')}, lograré ${g('#f-res','[RESULTADO ESPECÍFICO]')}, medido mediante ${g('#f-ind','[INDICADOR/MÉTRICA]')}, realizando ${g('#f-acc','[ACCIONES CLAVE]')}, porque contribuye a ${g('#f-prop','[PROPÓSITO / PRIORIDAD]')}.`;
     try{await navigator.clipboard.writeText(t);toast('Fórmula copiada 📋')}
     catch(_e){prompt('Copia la fórmula:',t)}
   };
