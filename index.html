@@ -18,7 +18,7 @@
   --ink:#26332C; --ink2:#5C6A61; --ink3:#8B978D; --line:#DEE3D6; --line2:#CBD2C2;
   --verde:#33684B; --verde-ink:#2A5740; --matcha:#6E9C6B; --verde-soft:#E2ECE0; --verde-wash:#EAF1E7;
   --kin:#A87E1C; --kin-bright:#D9A62E; --kin-soft:#F5EBD2; --kin-wash:#FAF4E3;
-  --night:#5A6BA8; --clay:#A65440; --warn:#B07926;
+  --night:#5A6BA8; --clay:#A65440; --warn:#B07926; --btn-ink:#fff;
   --shadow:0 1px 2px rgba(38,51,44,.06),0 6px 24px -8px rgba(38,51,44,.12);
   --shadow-lg:0 4px 12px rgba(38,51,44,.08),0 24px 60px -16px rgba(38,51,44,.22);
   --r:18px; --r-sm:12px; --r-lg:26px;
@@ -32,7 +32,7 @@
     --ink:#E8EDE5; --ink2:#A3B0A4; --ink3:#71806F; --line:#2C362D; --line2:#3A463A;
     --verde:#7FB98F; --verde-ink:#9CCBA8; --matcha:#7FAF7C; --verde-soft:#24352A; --verde-wash:#1F2C23;
     --kin:#D9A62E; --kin-bright:#E8BF57; --kin-soft:#3A3113; --kin-wash:#2C2712;
-    --night:#8B99CF; --clay:#C97A63; --warn:#CE9B45;
+    --night:#8B99CF; --clay:#C97A63; --warn:#CE9B45; --btn-ink:#10241A;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px -8px rgba(0,0,0,.5);
     --shadow-lg:0 4px 12px rgba(0,0,0,.35),0 24px 60px -16px rgba(0,0,0,.6);
   }
@@ -42,7 +42,7 @@
   --ink:#E8EDE5; --ink2:#A3B0A4; --ink3:#71806F; --line:#2C362D; --line2:#3A463A;
   --verde:#7FB98F; --verde-ink:#9CCBA8; --matcha:#7FAF7C; --verde-soft:#24352A; --verde-wash:#1F2C23;
   --kin:#D9A62E; --kin-bright:#E8BF57; --kin-soft:#3A3113; --kin-wash:#2C2712;
-  --night:#8B99CF; --clay:#C97A63; --warn:#CE9B45;
+  --night:#8B99CF; --clay:#C97A63; --warn:#CE9B45; --btn-ink:#10241A;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px -8px rgba(0,0,0,.5);
   --shadow-lg:0 4px 12px rgba(0,0,0,.35),0 24px 60px -16px rgba(0,0,0,.6);
 }
@@ -85,9 +85,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--verde);box-shadow:0 0
 .chip{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);white-space:nowrap}
 .chip.cat{border:none;color:#fff}
 .pill{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;padding:5px 11px;border-radius:99px;background:var(--verde-soft);color:var(--verde-ink)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:700;border-radius:14px;padding:11px 18px;background:var(--verde);color:#fff;transition:transform .1s,filter .15s;text-align:center}
-:root[data-theme="dark"] .btn{color:#10241A}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#10241A}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:700;border-radius:14px;padding:11px 18px;background:var(--verde);color:var(--btn-ink);transition:transform .1s,filter .15s;text-align:center}
 .btn:active{transform:scale(.97)}
 .btn.sec{background:var(--surface2);color:var(--ink);border:1.5px solid var(--line2)}
 .btn.ghost{background:transparent;color:var(--verde);border:1.5px solid color-mix(in srgb,var(--verde) 40%,transparent)}
@@ -339,6 +337,19 @@ table.zen td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:
 .celebrate-ring{animation:pulse 1s ease-in-out}
 @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
 </style>
+<script>
+/* tema por dispositivo: '' = automático (sistema), 'light' | 'dark' = forzado */
+window.FZTHEMEKEY='fz-theme-'+location.pathname;
+window.fzApplyTheme=function(t){
+  const de=document.documentElement;
+  if(t==='light'||t==='dark')de.dataset.theme=t;else delete de.dataset.theme;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(mt=>{
+    const dark=t==='dark'||(!t&&mt.media&&mt.media.indexOf('dark')>=0);
+    mt.setAttribute('content',dark?'#141A16':'#EFF1EA');
+  });
+};
+try{window.fzApplyTheme(localStorage.getItem(window.FZTHEMEKEY)||'')}catch(e){}
+</script>
 </head>
 <body>
 <div id="shell">
@@ -2510,6 +2521,7 @@ function renderPerfil(main,d){
   const trophies=[...d.goals.values()].filter(g=>g.m===m.id&&g.completedT);
   const kudosGiven=STATE.events.filter(e=>e.type==='kudo'&&e.m===m.id&&monday(dkey(new Date(e.t)))===d.curWk).length;
   const sendasEarned=Object.entries(pm.sendaLv||{}).filter(([,l])=>l>=1).sort((a,b)=>b[1]-a[1]);
+  let themeNow='';try{themeNow=localStorage.getItem(window.FZTHEMEKEY)||''}catch(e){}
   main.innerHTML=`<div class="vgap">
     <div class="card" style="text-align:center">
       <div style="display:flex;justify-content:center">${avatarHtml(m,84,pm.levelPct)}</div>
@@ -2567,6 +2579,12 @@ function renderPerfil(main,d){
         <input type="checkbox" data-set="amort" ${m.amort?'checked':''} style="width:auto"></label>
       <label class="row between" style="margin-top:10px"><span class="small">🔔 Sonidos</span>
         <input type="checkbox" data-set="sound" ${!d.fam.mute?'checked':''} style="width:auto"></label>
+      <label class="row between" style="margin-top:10px"><span class="small">🌗 Tema <span class="tiny muted">(este dispositivo)</span></span>
+        <select id="theme-sel" style="width:auto">
+          <option value="">Automático</option>
+          <option value="light" ${themeNow==='light'?'selected':''}>Claro</option>
+          <option value="dark" ${themeNow==='dark'?'selected':''}>Oscuro</option>
+        </select></label>
       ${m.adult?`<div class="hr"></div>
       <div class="row between"><span class="small">Código de invitación</span><b style="font-family:var(--font-d);letter-spacing:.15em">${esc(d.fam.code)}</b></div>
       <label class="field"><span class="lab">🎁 Recompensas de la Racha Familiar (etiquetas reales, definidas por la familia)</span>
@@ -2619,6 +2637,12 @@ function renderPerfil(main,d){
     if(k==='sound')appendEvents([{type:'family.update',patch:{mute:!i.checked}}]);
     else appendEvents([{type:'member.update',m:m.id,patch:{[k]:i.checked}}]);
   });
+  const tsel=$('#theme-sel',main);
+  if(tsel)tsel.onchange=()=>{
+    const v=tsel.value;
+    try{v?localStorage.setItem(window.FZTHEMEKEY,v):localStorage.removeItem(window.FZTHEMEKEY)}catch(e){}
+    window.fzApplyTheme(v);
+  };
   const ra=$('#rw-add',main);
   if(ra)ra.onclick=()=>{
     const at=+$('#rw-at',main).value,label=$('#rw-label',main).value.trim();
