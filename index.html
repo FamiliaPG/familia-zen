@@ -417,6 +417,7 @@ const CONFIG={
   XP_TH:L=>Math.round(250*Math.pow(L,1.6)), LEVEL_CAP:60,
   SENDA_XP:L=>Math.round(100*Math.pow(L,1.5)),
   GOAL_XP:500, HONOR_XP:100,
+  STREAK_MS:[{d:3,xp:30,e:'🌱',n:'3 días'},{d:5,xp:60,e:'🔥',n:'5 días'},{d:14,xp:150,e:'⚡',n:'2 semanas'},{d:21,xp:250,e:'🌟',n:'3 semanas'},{d:30,xp:500,e:'🏮',n:'1 mes'}],
   R0:1200, RBASE:1200, LREF:600, RT_MIN:900, RT_MAX:1700, RFLOOR:800,
   K:{prov:80,u1400:48,u1800:32,over:24,reentry:16}, PROV_WEEKS:6, REENTRY_DAYS:14, REENTRY_FLOOR:-10,
   AMORT:.75, A_MAX:1.10,
@@ -782,7 +783,7 @@ function deriveState(events,now){
   /* --- init perM --- */
   for(const m of D.members.values()){
     D.perM.set(m.id,{xp:150,badgeXp:0,level:1,senda:{},R:CONFIG.R0,ratingLog:[],peakR:CONFIG.R0,peakTier:ritmoTierIdx(CONFIG.R0),
-      played:0,weekStreak:0,dayStreak:0,dayStreakMax:0,freezes:1,fichaDoble:false,quotes:new Set(),chests:0,
+      played:0,weekStreak:0,dayStreak:0,dayStreakMax:0,streakXP:0,streakHits:{},freezes:1,fichaDoble:false,quotes:new Set(),chests:0,
       lastDoneT:null,absentRun:0,absentLoss:0,repairsSeason:0,honorRun:0,
       week:new Map(), // wk -> {pts,raw,xpW,A,Wsched,WschedEff,PJ,dR,E,completed,scheduledN,doneN,catPts:{},cats:Set,backfills,crowns:[],awards:[],kudosIn,kudosOut,sponsored}
       stats:{plannedDone:0,before8:0,t5ByCat:{},doneByCat:{},evidByCat:{},kpiByCat:{},catDayRun:{},catDayRunMax:{},catLastDay:{},catWeekRun:{},catLastWeek:{},goalsDoneByCat:{},catSeason:{},catSeasonMax:{},kudosSeason:0,kudosSeasonMax:0,heartWins:0,sponsorsGiven:0,famStreakMax:0,perfectWeeks:0,perfectSeason:0,perfectSeasonMax:0,honorOk:false,heroReturn:false,weekCatsMax:0,dayCatsMax:0,peakR:CONFIG.R0,dayStreakMax:0,sealsSeason:0,sealsSeasonMax:0,weeksNoBackfill:0,t5before7:0,echo:{},echoMax:0,seedRevived:false,voided:0},
@@ -932,7 +933,9 @@ function deriveState(events,now){
         const qualifies=dayDone.some(a=>a.schedT<dayStart(a.date)||a.rescheduled);
         const isRest=restSet.has(day);
         const dayOver=day<todayK;
-        if(qualifies){pm.dayStreak++;pm.dayStreakMax=Math.max(pm.dayStreakMax,pm.dayStreak)}
+        if(qualifies){pm.dayStreak++;pm.dayStreakMax=Math.max(pm.dayStreakMax,pm.dayStreak);
+          const ms=CONFIG.STREAK_MS.find(x=>x.d===pm.dayStreak);
+          if(ms){pm.streakXP+=ms.xp;pm.streakHits[ms.d]=(pm.streakHits[ms.d]||0)+1}}
         else if(isRest){/* neutro */}
         else if(dayOver){
           const rep=repairs.find(r=>r.m===mem.id&&r.date===day);
@@ -1109,6 +1112,7 @@ function deriveState(events,now){
     let xp=150;
     for(const[,mw]of pm.week)xp+=mw.xpW;
     for(const g of D.goals.values())if(g.m===mem.id){if(g.completedT)xp+=CONFIG.GOAL_XP;if(g.honorClosed)xp+=CONFIG.HONOR_XP}
+    xp+=pm.streakXP;
     pm.stats.dayStreakMax=pm.dayStreakMax;
     for(const b of BADGES){let on=false;try{on=b.t(pm.stats)}catch(e){}if(on){pm.badges.add(b.id);xp+=b.xp}}
     pm.xp=xp;pm.level=levelOf(xp);
@@ -1517,6 +1521,7 @@ function completeFlow(a,btn){
 }
 function finishComplete(a,{kpi=null,note=''}={},btn){
   const rect=btn?btn.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0};
+  const s0=(D().perM.get(a.m)||{}).dayStreak||0;
   appendEvents([{type:'act.done',aid:a.aid,kpi,note}],{silent:true});
   const d=D(),na=d.acts.get(a.aid),g=a.goalId?d.goals.get(a.goalId):null;
   const pts=na&&na._pts||0;
@@ -1532,6 +1537,12 @@ function finishComplete(a,{kpi=null,note=''}={},btn){
       modal(`<div style="text-align:center"><div style="font-size:3rem">🎁</div><h3>¡Cofre de Constancia!</h3>
       <p class="small" style="margin-top:6px">${kind==='xp'?'+25 XP extra':kind==='semilla'?'🃏 Nueva Semilla de Sabiduría para tu colección':kind==='piedra'?'🪨 +1 Piedra de Descanso':'🎴 Ficha Doble: tu próxima actividad vale ×2'}</p></div>`)},700);
   }
+  const s1=(d.perM.get(a.m)||{}).dayStreak||0;
+  const sms=s1>s0?CONFIG.STREAK_MS.find(x=>x.d===s1):null;
+  if(sms)setTimeout(()=>{confetti(80);chime('up');
+    modal(`<div style="text-align:center"><div style="font-size:3rem">${sms.e}</div><h3>¡Racha de ${sms.n}!</h3>
+    <p class="small" style="margin-top:6px">${s1} días seguidos completando lo planificado · <b class="gold">+${sms.xp} XP</b></p>
+    <p class="tiny muted" style="margin-top:6px">Mira tu progreso de racha en la Liga 🔥</p></div>`)},na&&na._chest?1700:700);
   toast(`${msg} · +${pts} pts`,3200);
 }
 /* ---------- calendario externo (Google / Apple) · Puerto Rico = UTC-4 todo el año ---------- */
@@ -2087,6 +2098,29 @@ function renderLiga(main,d){
     <div class="row between"><h1 style="font-size:1.35rem">Liga familiar</h1>
       <span class="chip">Temporada ${d.season} · sem ${d.seasonWeek}/13</span></div>
     <button class="btn big ${isSunday?'gold':''}" data-a="meet">🏮 ${isSunday?'¡Es domingo! Iniciar la Reunión Familiar':'Reunión Familiar (modo presentación)'}</button>
+    ${(()=>{const pm=d.perM.get(SESSION);if(!pm)return'';
+      const rests=new Set(STATE.events.filter(e=>e.type==='day.rest'&&e.m===SESSION).map(e=>e.date));
+      const dots=['L','M','X','J','V','S','D'].map((dn,i)=>{
+        const day=addDays(wk,i);
+        const hit=[...d.acts.values()].some(a=>a.m===SESSION&&a.date===day&&a.done&&!a.voided&&(a.schedT<dayStart(a.date)||a.rescheduled));
+        const rest=rests.has(day),future=day>d.todayK;
+        return `<div style="text-align:center"><div class="tiny" style="font-weight:700;color:${hit?'var(--kin)':'var(--ink3)'}">${dn}</div>
+          <div style="width:29px;height:29px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:3px auto 0;font-size:.8rem;font-weight:800;
+          ${hit?'background:var(--kin-bright);color:#2A2107':rest?'background:var(--verde-soft)':'background:var(--sunken);color:var(--ink3)'};
+          ${day===d.todayK&&!hit?'outline:2px dashed var(--kin);outline-offset:-2px':''}">${hit?'✓':rest?'🛌':future?'':'·'}</div></div>`}).join('');
+      const next=CONFIG.STREAK_MS.find(x=>x.d>pm.dayStreak);
+      const chips=CONFIG.STREAK_MS.map(x=>{const got=pm.dayStreak>=x.d;
+        return `<span class="chip" style="${got?'background:var(--kin-wash);border-color:var(--kin);color:var(--kin)':''}">${x.e} ${x.n} · +${x.xp} XP${got?' ✓':''}</span>`}).join('');
+      return `<div class="card">
+        <div class="row between"><h3 class="small">🔥 Tu racha diaria</h3><span class="tiny muted">récord: ${pm.dayStreakMax} ${pm.dayStreakMax===1?'día':'días'}</span></div>
+        <div class="row" style="margin-top:10px;gap:16px;align-items:center">
+          <div style="text-align:center;flex:none;min-width:64px"><div class="dnum" style="font-size:2.3rem;font-weight:900;color:var(--kin);line-height:1.1">${pm.dayStreak}</div><div class="tiny muted">${pm.dayStreak===1?'día seguido':'días seguidos'}</div></div>
+          <div class="grow row" style="justify-content:space-between">${dots}</div>
+        </div>
+        ${next?`<p class="tiny muted" style="margin-top:9px">Completa algo planificado cada día · a <b>${next.d-pm.dayStreak}</b> ${next.d-pm.dayStreak===1?'día':'días'} del premio ${next.e} ${next.n} <b class="gold">+${next.xp} XP</b></p>`
+          :`<p class="tiny gold" style="margin-top:9px">🏮 ¡Todos los premios de racha conseguidos! Mantenla viva.</p>`}
+        <div class="scroll-x" style="margin-top:8px">${chips}</div>
+      </div>`})()}
     <div class="card">
       <div class="row between"><h3 class="small">Esta semana · en vivo</h3><span class="tiny muted">cierra dom 18:00</span></div>
       <div class="vgap" style="margin-top:10px">${liveRows.map((r,i)=>`
@@ -3139,6 +3173,18 @@ function runTests(){
     ok('T11 meta marcada como borrada',d2.goals.get('G1')&&d2.goals.get('G1').deleted===true);
     const pts2=(d2.perM.get('M1').week.get(W0)||{}).pts||0;
     ok('T11 puntos ganados se conservan',pts2===pts1,'antes='+pts1+' después='+pts2);
+  }
+  // T12: premios de racha diaria (3 y 5 días)
+  {
+    const evs=[...base];
+    for(let i=0;i<5;i++){
+      evs.push({id:'sa'+i,t:ts(addDays(W0,-3)),type:'act.sched',aid:'sa'+i,m:'M1',cat:'lectura',title:'leer',tier:'T2',date:addDays(W0,i)});
+      evs.push({id:'sd'+i,t:ts(addDays(W0,i),10),type:'act.done',aid:'sa'+i});
+    }
+    const d1=mkFam(evs);
+    const pm=d1.perM.get('M1');
+    ok('T12 racha de 5 días paga hitos 3 y 5 (+90 XP)',pm.streakXP===90,'streakXP='+pm.streakXP);
+    ok('T12 hitos registrados',pm.streakHits[3]===1&&pm.streakHits[5]===1,JSON.stringify(pm.streakHits));
   }
   const passN=T.filter(t=>t.pass).length;
   $('#main').innerHTML=`<div class="vgap"><h1>Pruebas del motor · ${passN}/${T.length}</h1>
