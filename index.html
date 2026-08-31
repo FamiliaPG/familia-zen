@@ -1927,6 +1927,7 @@ function goalEditor(gid){
       <label class="field"><span class="lab">T · Fecha límite</span><input id="g-t" type="date" value="${f.fechaLimite||''}"></label>
       <label class="field"><span class="lab">Estado</span><select id="g-est">${['No iniciado','En progreso','En pausa'].map(x=>`<option ${(f.estado||'En progreso')===x?'selected':''}>${x}</option>`).join('')}</select></label>
     </div>
+    <label class="field"><span class="lab">Título abreviado de la meta — así se verá 🎯 en tu Agenda</span><input id="g-short" value="${esc(f.objetivo||'')}" placeholder="Ej. Correr 5K"></label>
     <div class="grid2">
       <label class="field"><span class="lab">Indicador / KPI (unidad)</span><input id="g-kpiu" value="${esc(f.kpiUnit||'')}" placeholder="km · páginas · sesiones"></label>
       <label class="field"><span class="lab">KPI objetivo <button type="button" class="qhelp" id="g-kpihelp">?</button></span><input id="g-kpit" inputmode="numeric" value="${f.kpiTarget||''}" placeholder="Ej. 100"></label>
@@ -1986,6 +1987,7 @@ function goalEditor(gid){
       smartFinal=`Antes de ${P(sfv.fecha,'[FECHA]')}, lograré ${sfv.res}, medido mediante ${P(sfv.ind,'[INDICADOR]')}, realizando ${P(sfv.acc,'[ACCIONES]')}, porque contribuye a ${P(sfv.prop,'[PROPÓSITO]')}.`;
       objetivo=sfv.res;
     }
+    if(v('#g-short'))objetivo=v('#g-short');
     const fields={area,objetivo,s:v('#g-s'),mzbl:v('#g-m'),alc:v('#g-a'),rel:v('#g-r'),
       fechaLimite:$('#g-t',mb).value||null,estado:$('#g-est',mb).value,smartFinal,sf:sfv,
       kpiUnit:v('#g-kpiu'),kpiTarget:+$('#g-kpit',mb).value||null,
