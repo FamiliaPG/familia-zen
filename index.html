@@ -121,6 +121,7 @@ label.field .lab{display:block;font-size:.8rem;font-weight:700;color:var(--ink2)
 .tierchip{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--kin-wash);color:var(--kin);border:1px solid color-mix(in srgb,var(--kin) 30%,transparent)}
 .fml{display:inline-block;width:12ch;max-width:100%;background:transparent;border:none;border-bottom:2px dashed color-mix(in srgb,var(--verde) 50%,transparent);border-radius:0;padding:1px 4px;color:var(--verde-ink);text-align:center}
 .fml:focus{border-bottom:2px solid var(--verde);box-shadow:none}
+.qhelp{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.5px solid var(--ink3);color:var(--ink2);font-size:.6rem;font-weight:700;vertical-align:text-top;margin-left:2px;padding:0;line-height:1}
 
 /* modal */
 #modal-root:empty{display:none}
@@ -1926,10 +1927,11 @@ function goalEditor(gid){
     </div>
     <div class="grid2">
       <label class="field"><span class="lab">Indicador / KPI (unidad)</span><input id="g-kpiu" value="${esc(f.kpiUnit||'')}" placeholder="km · páginas · sesiones"></label>
-      <label class="field"><span class="lab">KPI objetivo</span><input id="g-kpit" inputmode="numeric" value="${f.kpiTarget||''}" placeholder="Ej. 100"></label>
+      <label class="field"><span class="lab">KPI objetivo <button type="button" class="qhelp" id="g-kpihelp">?</button></span><input id="g-kpit" inputmode="numeric" value="${f.kpiTarget||''}" placeholder="Ej. 100"></label>
     </div>
     <div class="hr"></div>
     <div class="eyebrow">El juego 🎋</div>
+    <label class="field"><span class="lab">Identidad — proclama en positivo quién eres al vivir esta meta</span><input id="g-id" value="${esc(f.identidad||'')}" placeholder="Ej. Soy alguien que se mueve todos los días"></label>
     <label class="field"><span class="lab">Plan B de 2 minutos — versión mini de tu meta para días difíciles</span><input id="g-min" value="${esc(f.minVersion||'')}" placeholder="Ej. Caminar 5 minutos"></label>
     <label class="field"><span class="lab">Acciones / próximos pasos (cada línea se puede planificar)</span>
       <div class="vgap" id="g-acts"></div>
@@ -1940,6 +1942,12 @@ function goalEditor(gid){
     <button class="btn big" style="margin-top:14px" id="g-go">${g?'Guardar':'Crear meta 🎯'}</button>`);
   mb.classList.add('sticky');
   $$('.fml',mb).forEach(i=>{const fit=()=>{i.style.width=Math.min(40,Math.max(i.placeholder.length,i.value.length)+2)+'ch'};i.oninput=fit;fit()});
+  $('#g-kpihelp',mb).onclick=e=>{e.preventDefault();
+    modal(`<h3>¿Qué es un KPI? 📈</h3>
+      <p class="small muted" style="margin-top:6px">KPI significa «indicador clave de progreso»: el número con el que medirás tu meta.</p>
+      <p class="small" style="margin-top:8px">· <b>Indicador / unidad</b>: qué vas a contar — km, páginas, sesiones, vasos de agua…</p>
+      <p class="small" style="margin-top:4px">· <b>KPI objetivo</b>: a cuánto quieres llegar — p. ej. 100.</p>
+      <p class="small muted" style="margin-top:8px">Cada vez que completes una actividad vinculada a esta meta, la app te preguntará cuánto sumaste (p. ej. «5 km») — necesario para el bono de meta +25%. La tarjeta de tu meta mostrará el acumulado: 📈 35 / 100 km.</p>`)};
   const paintActs=()=>{$('#g-acts',mb).innerHTML=actions.map((a,i)=>`
     <div class="row small" style="background:var(--surface2);border-radius:10px;padding:7px 10px"><span class="grow">${esc(a.title)}</span>${tierBadge(a.tier)}<button data-rm="${i}" style="color:var(--clay);font-weight:700;padding:0 4px">✕</button></div>`).join('');
     $$('#g-acts [data-rm]',mb).forEach(b=>b.onclick=()=>{actions.splice(+b.dataset.rm,1);paintActs()})};
@@ -1963,7 +1971,7 @@ function goalEditor(gid){
     const fields={area,objetivo,s:v('#g-s'),mzbl:v('#g-m'),alc:v('#g-a'),rel:v('#g-r'),
       fechaLimite:$('#g-t',mb).value||null,estado:$('#g-est',mb).value,smartFinal,sf:sfv,
       kpiUnit:v('#g-kpiu'),kpiTarget:+$('#g-kpit',mb).value||null,
-      minVersion:v('#g-min'),notas:v('#g-notas'),
+      identidad:v('#g-id'),minVersion:v('#g-min'),notas:v('#g-notas'),
       progreso:g?progresoAt(g,Date.now()):0};
     if(g)appendEvents([{type:'goal.update',gid,f:fields,actions}]);
     else appendEvents([{type:'goal.create',gid:uid(),m:SESSION,f:fields,actions}]);
