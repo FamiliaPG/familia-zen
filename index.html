@@ -454,6 +454,7 @@ const CATS={
   cursos:{n:'Cursos',e:'🎓',c:'#3D8E9A'},
   espiritual:{n:'Espiritual',e:'🕊️',c:'#9A5F8A'},
   social:{n:'Social',e:'🤝',c:'#C25E72'},
+  profesional:{n:'Profesional',e:'💼',c:'#35597F'},
   otro:{n:'Otro',e:'✨',c:'#7E8A80'},
 };
 const CAT_IDS=Object.keys(CATS);
@@ -479,6 +480,7 @@ const SENDAS={
   cursos:['Aprendiz','Estudiante','Erudito','Maestro'],
   espiritual:['Buscador','Peregrino','Raíz Profunda','Iluminado'],
   social:['Cercano','Tejedor','Puente','Corazón Abierto'],
+  profesional:['Diligente','Artesano','Experto','Maestro de Oficio'],
   otro:['Curioso','Explorador','Pionero','Renacentista'],
 };
 const sendaTitle=(cat,L)=>{const t=SENDAS[cat]||SENDAS.otro;return L>=20?t[3]:L>=10?t[2]:L>=5?t[1]:L>=1?t[0]:null};
@@ -516,7 +518,7 @@ const BADGES=[
  {id:'palabrafirme',n:'Palabra Firme',e:'🤝',r:'epica',xp:500,d:'8 semanas seguidas sin registros anulados · +2% permanente',t:s=>s.honorOk},
  {id:'regresoheroe',n:'Regreso del Héroe',e:'🌱',r:'rara',xp:350,d:'Vuelve tras ≥14 días fuera y cierra con A ≥ 0.70',t:s=>s.heroReturn},
  {id:'equilibrio',n:'Equilibrio',e:'☯️',r:'epica',xp:400,d:'6 categorías distintas en una semana',t:s=>s.weekCatsMax>=6},
- {id:'ruedacompleta',n:'Rueda Completa',e:'🎡',r:'mitica',xp:1200,d:'Las 10 categorías en una sola semana',t:s=>s.weekCatsMax>=10},
+ {id:'ruedacompleta',n:'Rueda Completa',e:'🎡',r:'mitica',xp:1200,d:`Las ${CAT_IDS.length} categorías en una sola semana`,t:s=>s.weekCatsMax>=CAT_IDS.length},
  {id:'montanabadge',n:'Montaña',e:'⛰️',r:'rara',xp:300,d:'Alcanza Ritmo 1.450',t:s=>s.peakR>=1450},
  {id:'kensho',n:'Kenshō',e:'🌄',r:'mitica',xp:1500,d:'Alcanza Ritmo 1.900',t:s=>s.peakR>=1900},
  {id:'bambu100',n:'Constancia de Bambú',e:'🎋',r:'legendaria',xp:1000,d:'Racha diaria de 100 días',t:s=>s.dayStreakMax>=100},
