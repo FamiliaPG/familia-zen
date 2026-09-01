@@ -451,7 +451,6 @@ const CONFIG={
 const CATS={
   salud:{n:'Salud',e:'🌿',c:'#4E8D6E'},
   ejercicio:{n:'Ejercicio',e:'🏃',c:'#C4693B'},
-  sueno:{n:'Sueño',e:'🌙',c:'#5A6BA8'},
   lectura:{n:'Lectura',e:'📖',c:'#A8842C'},
   nutricion:{n:'Nutrición',e:'🥗',c:'#7A9A3D'},
   meditacion:{n:'Meditación',e:'🧘',c:'#8A79B8'},
@@ -459,6 +458,7 @@ const CATS={
   espiritual:{n:'Espiritual',e:'🕊️',c:'#9A5F8A'},
   social:{n:'Social',e:'🤝',c:'#C25E72'},
   profesional:{n:'Profesional',e:'💼',c:'#35597F'},
+  sueno:{n:'Sueño',e:'🌙',c:'#5A6BA8'},
   otro:{n:'Otro',e:'✨',c:'#7E8A80'},
 };
 const CAT_IDS=Object.keys(CATS);
@@ -477,7 +477,6 @@ const ritmoTierIdx=r=>RITMO_TIERS.indexOf(ritmoTier(r));
 const SENDAS={
   salud:['Atento','Cuidador','Guardián','Sanador'],
   ejercicio:['Movido','Constante','Atleta','Titán'],
-  sueno:['Descansado','Nocturno Sabio','Guardián del Sueño','Soñador Sereno'],
   lectura:['Lector','Devorador','Bibliófilo','Sabio'],
   nutricion:['Consciente','Cocinero','Alquimista','Maestro del Plato'],
   meditacion:['Respirador','Sereno','Contemplativo','Vacío Luminoso'],
@@ -485,6 +484,7 @@ const SENDAS={
   espiritual:['Buscador','Peregrino','Raíz Profunda','Iluminado'],
   social:['Cercano','Tejedor','Puente','Corazón Abierto'],
   profesional:['Diligente','Artesano','Experto','Maestro de Oficio'],
+  sueno:['Descansado','Nocturno Sabio','Guardián del Sueño','Soñador Sereno'],
   otro:['Curioso','Explorador','Pionero','Renacentista'],
 };
 const sendaTitle=(cat,L)=>{const t=SENDAS[cat]||SENDAS.otro;return L>=20?t[3]:L>=10?t[2]:L>=5?t[1]:L>=1?t[0]:null};
