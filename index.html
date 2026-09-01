@@ -1651,13 +1651,13 @@ function actDetail(a){
   });
 }
 /* ---------- programar actividad ---------- */
-function schedModal({date,edit,goalId}={}){
+function schedModal({date,edit,goalId,cat}={}){
   if(READONLY)return toast('Vista de solo lectura');
   const d=D(),m=me();
   const goals=[...d.goals.values()].filter(g=>g.m===m.id&&['En progreso','No iniciado'].includes(estadoAt(g,Date.now())));
   let selGoal=edit?(edit.goalId||''):goalId||'';
   if(selGoal&&!d.goals.get(selGoal))selGoal='';
-  let selCat=edit?edit.cat:(selGoal?d.goals.get(selGoal).f.area:'ejercicio');
+  let selCat=edit?edit.cat:(cat&&CATS[cat]?cat:selGoal?d.goals.get(selGoal).f.area:'ejercicio');
   let selTier=edit?edit.tier:'T2';
   const dateV=edit?edit.date:(date||d.todayK);
   const tplOpts=g=>g?g.actions.map((x,i)=>`<button class="chip" data-tpl="${i}">${esc(x.title.slice(0,28))} · ${CONFIG.TIER_NAMES[x.tier]||x.tier}</button>`).join(''):'';
@@ -1689,7 +1689,8 @@ function schedModal({date,edit,goalId}={}){
       </div></label>`}
     <label class="field"><span class="lab">Notas <span class="muted">(opcional — van también al calendario)</span></span><textarea id="s-notes" rows="2" maxlength="300" placeholder="Detalles, enlaces, recordatorios…">${edit&&edit.notes?esc(edit.notes):''}</textarea></label>
     <div id="s-warn" class="tiny muted" style="margin-top:8px"></div>
-    <button class="btn big" style="margin-top:10px" id="s-go">${edit?'Guardar cambios':'Planificar'}</button>`);
+    <button class="btn big" style="margin-top:10px" id="s-go">${edit?'Guardar cambios':'Planificar'}</button>
+    ${edit?'':'<button class="btn big sec" style="margin-top:8px" id="s-gomore">Planificar esta actividad y planificar más ➕</button>'}`);
   mb.classList.add('sticky');
   const warn=()=>{const dv=$('#s-date',mb).value;
     $('#s-warn',mb).innerHTML=dv<=d.todayK&&!edit?'⚡ Programar para hoy cuenta como <b>improvisada (50%)</b>. Planificar con antelación paga completo.':'✅ Planificada con antelación: valor completo.'};
@@ -1718,7 +1719,7 @@ function schedModal({date,edit,goalId}={}){
     $$('#s-dow [data-dow]',mb).forEach(b=>b.onclick=()=>{const i=+b.dataset.dow;repDays.has(i)?repDays.delete(i):repDays.add(i);paintRep()});
     paintRep();
   }
-  $('#s-go',mb).onclick=()=>{
+  const plan=(more)=>{
     const title=$('#s-title',mb).value.trim();
     if(!title)return toast('Escribe qué harás');
     const dv=$('#s-date',mb).value, tv=$('#s-time',mb).value||null;
@@ -1739,6 +1740,7 @@ function schedModal({date,edit,goalId}={}){
     const grp=dates.length>1?uid():null;
     appendEvents(dates.map(dk=>({type:'act.sched',aid:uid(),m:m.id,goalId:selGoal||null,cat:selCat,title,tier:selTier,date:dk,time:tv,end:endv,notes:notev,grp})));
     mb.remove();toast(dates.length>1?`Planificadas ${dates.length} actividades 🌱`:'Planificada 🌱');
+    if(more){schedModal({goalId:selGoal||undefined,cat:selCat,date:dv});return}
     const na={aid:uid(),title,cat:selCat,tier:selTier,date:dates[0],time:tv,end:endv,notes:notev,rrule};
     const cb=modal(`<h3>📆 ¿${dates.length>1?'Las':'La'} añades a tu calendario?</h3>
       <p class="small muted" style="margin-top:6px">${CATS[selCat].e} ${esc(title)} · ${dates.length>1?dates.length+' veces desde ':''}${fmtDate(dates[0])}${tv?' · '+tv+(endv?'–'+endv:''):''}${rrule?' · se añade como evento repetido':''}</p>
@@ -1752,6 +1754,8 @@ function schedModal({date,edit,goalId}={}){
     $('#cb-a',cb).onclick=()=>downloadIcs(na);
     $('#cb-x',cb).onclick=()=>cb.remove();
   };
+  $('#s-go',mb).onclick=()=>plan(false);
+  const sgm=$('#s-gomore',mb);if(sgm)sgm.onclick=()=>plan(true);
 }
 /* ---------- VISTA: CALENDARIO ---------- */
 let CAL_WK=null,CAL_DAY=null,CAL_FILTER='all',CAL_MODE='week';
