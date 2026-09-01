@@ -129,6 +129,8 @@ input[type=date]{min-width:0;max-width:100%}
 .qhelp{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.5px solid var(--ink3);color:var(--ink2);font-size:.6rem;font-weight:700;vertical-align:text-top;margin-left:2px;padding:0;line-height:1}
 .plusdot{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--verde);color:var(--btn-ink);font-weight:900;font-size:.85rem;line-height:1;margin-left:4px;vertical-align:middle;position:relative;top:-1px;box-shadow:0 1px 2px #0002}
 h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
+.linklike{background:none;border:none;padding:0;font:inherit;font-size:.85rem;font-weight:700;color:var(--verde-ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px;text-decoration-color:color-mix(in srgb,var(--verde-ink) 40%,transparent)}
+.linklike:hover{text-decoration-color:var(--verde-ink)}
 
 /* modal */
 #modal-root:empty{display:none}
@@ -2066,6 +2068,53 @@ function fmlInit(root){
 }
 /* ---------- VISTA: GUÍA ---------- */
 const FORMULA_DRAFT={};
+const SMART_EX={
+  salud:[
+    'Antes de fin de año, lograré completar mis 3 chequeos médicos pendientes (dental, visión y laboratorios), medido por citas asistidas, agendando una cita por mes, porque prevenir es la mejor forma de cuidarme.',
+    'Antes del 1 de diciembre, lograré bajar mi presión a menos de 130/85, medido con el monitor de casa cada domingo, caminando 30 minutos diarios y cocinando con menos sal, porque quiero un corazón sano para acompañar a mi familia.'],
+  ejercicio:[
+    'Antes del 15 de noviembre, lograré correr 5 km sin parar, medido con la app del teléfono, entrenando 3 veces por semana con un plan de principiante, porque quiero más energía y resistencia.',
+    'Antes de 8 semanas, lograré hacer 20 flexiones seguidas, medido con un conteo cada viernes, practicando 10 minutos de fuerza lunes, miércoles y viernes, porque quiero sentirme fuerte para las actividades familiares.'],
+  lectura:[
+    'Antes del 31 de diciembre, lograré terminar 4 libros, medido por mi lista de lecturas, leyendo 20 minutos cada noche antes de dormir, porque leer alimenta mi mente y mi calma.',
+    'Antes de fin de mes, lograré terminar el libro que tengo empezado, medido por capítulos completados (2 por semana), leyendo sábados y domingos por la mañana, porque quiero recuperar mi hábito lector.'],
+  nutricion:[
+    'Antes de 30 días, lograré tomar 8 vasos de agua al día, medido con las marcas de mi botella, llenándola cada mañana y rellenándola al mediodía, porque la hidratación mejora mi energía.',
+    'Antes de 6 semanas, lograré cenar verduras 5 noches por semana, medido con un registro en la nevera, planificando el menú cada domingo, porque quiero darle a mi cuerpo mejor combustible.'],
+  meditacion:[
+    'Antes de 21 días, lograré meditar 10 minutos diarios, medido con la racha de la app, sentándome cada mañana justo después de despertar, porque la calma con la que empiezo define mi día.',
+    'Antes de fin de mes, lograré hacer 3 pausas de respiración al día, medido con recordatorios marcados en el teléfono, respirando profundo antes de cada comida, porque quiero responder con paciencia y no con estrés.'],
+  cursos:[
+    'Antes del 15 de diciembre, lograré completar mi curso en línea de Excel, medido por el certificado final, estudiando 2 lecciones por semana martes y jueves, porque esa destreza abre mi próximo paso profesional.',
+    'Antes de 12 semanas, lograré terminar el nivel A1 de inglés en la app, medido por las 40 unidades completadas, practicando 15 minutos al día, porque quiero comunicarme en nuestros viajes.'],
+  espiritual:[
+    'Antes de 40 días, lograré leer una reflexión o pasaje diario, medido con mi diario espiritual, dedicando 10 minutos al despertar, porque quiero empezar el día con propósito y gratitud.',
+    'Antes de fin de mes, lograré escribir 3 gratitudes cada noche, medido por las páginas de mi libreta, dejándola lista en la mesa de noche, porque la gratitud transforma cómo veo mi vida.'],
+  social:[
+    'Antes del último día del mes, lograré llamar a un familiar distinto cada semana, medido con 4 llamadas registradas, apartando los domingos a las 6 pm, porque los lazos se cuidan con presencia.',
+    'Antes de 2 meses, lograré organizar una cena con amigos, medido por la reunión realizada con al menos 5 invitados, enviando invitaciones y menú con 3 semanas de antelación, porque quiero cultivar mis amistades.'],
+  profesional:[
+    'Antes del 30 de noviembre, lograré actualizar mi currículum y mi perfil de LinkedIn, medido por ambos publicados, dedicando 1 hora cada sábado, porque quiero estar listo para nuevas oportunidades.',
+    'Antes del cierre del trimestre, lograré presentar una propuesta de mejora en mi trabajo, medido por la propuesta entregada a mi supervisor, preparando una página por semana, porque quiero crecer y aportar más valor.'],
+  sueno:[
+    'Antes de 3 semanas, lograré acostarme a las 10:30 pm entre semana, medido con el registro de sueño del teléfono, apagando pantallas a las 10 pm, porque dormir bien es la base de todo lo demás.',
+    'Antes de fin de mes, lograré dormir 7+ horas 5 noches por semana, medido con la app de sueño, adelantando mi rutina nocturna 30 minutos, porque descansado soy mi mejor versión.'],
+  otro:[
+    'Antes del 20 de diciembre, lograré ordenar y donar lo que no uso del clóset, medido por 3 bolsas donadas, dedicando 30 minutos cada sábado, porque un espacio ligero me da paz.',
+    'Antes de 2 meses, lograré ahorrar $200 para el fondo familiar, medido con el balance de la cuenta, transfiriendo $25 cada viernes de pago, porque quiero seguridad y tranquilidad para los míos.'],
+};
+function showSmartExamples(){
+  const secs=CAT_IDS.filter(c=>SMART_EX[c]).map(c=>{const k=CATS[c];
+    return `<div style="margin-top:16px">
+      <div class="row" style="gap:8px"><span style="font-size:1.15rem">${k.e}</span><b style="color:${k.c}">${k.n}</b></div>
+      ${SMART_EX[c].map(t=>`<p class="small" style="margin:8px 0 0;padding:10px 12px;border-radius:12px;background:var(--sunken);border-left:3px solid ${k.c};line-height:1.65">${t}</p>`).join('')}
+    </div>`}).join('');
+  modal(`<h3>💡 Ejemplos de SMART Goals</h3>
+    <p class="small muted" style="margin-top:6px">Dos ejemplos por categoría, con la fórmula: <i>antes de [fecha], lograré [resultado], medido mediante [indicador], realizando [acciones], porque contribuye a [propósito]</i>.</p>
+    ${secs}
+    <p class="tiny muted" style="margin-top:16px">Úsalos como inspiración y ajústalos a tu medida en la pestaña <b>Metas</b> 🎯.</p>`);
+}
+
 function renderGuia(main,d){
   const row=(l,c,def,q)=>`<tr><td><b style="font-family:var(--font-d);font-size:1.1rem;color:var(--verde)">${l}</b></td><td><b>${c}</b><p class="small muted" style="margin:4px 0 6px">${def}</p><p class="tiny" style="color:var(--verde-ink)">${q}</p></td></tr>`;
   main.innerHTML=`<div class="vgap">
@@ -2080,6 +2129,7 @@ function renderGuia(main,d){
         ${row('R','Relevant / Relevante','Tiene sentido dentro de las prioridades, valores, responsabilidades o propósito general.','¿Por qué es importante? ¿A qué propósito o prioridad contribuye?')}
         ${row('T','Time-bound / Con tiempo definido','Establece una fecha límite o periodo específico que crea enfoque y un punto claro de revisión.','¿Cuándo debe estar completada? ¿Qué hitos o fechas intermedias necesito?')}
       </table></div>
+      <p style="margin:12px 0 2px;text-align:center"><button type="button" class="linklike" data-a="smartex">💡 Ver ejemplos por categoría <span aria-hidden="true">→</span></button></p>
     </div>
     <div class="card" style="background:var(--verde-wash)">
       <div class="row between" style="gap:8px;flex-wrap:wrap"><div class="eyebrow">Fórmula práctica para metas SMART</div>
@@ -2125,6 +2175,8 @@ function renderGuia(main,d){
     if(FORMULA_DRAFT[i.id])i.value=FORMULA_DRAFT[i.id];
     i.addEventListener('input',()=>{FORMULA_DRAFT[i.id]=i.value});
   });
+  const exb=$('[data-a=smartex]',main);
+  if(exb)exb.onclick=()=>showSmartExamples();
   const cb=$('[data-a=copyform]',main);
   if(cb)cb.onclick=async()=>{
     const g=(s,ph)=>{const el=$(s,main);const v=el?el.value.trim():'';return v||ph};
