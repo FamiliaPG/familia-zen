@@ -121,9 +121,10 @@ input[type=date]{min-width:0;max-width:100%}
 .checkbtn:active{transform:scale(.9)}
 .checkbtn.on{background:var(--verde);border-color:var(--verde);color:#fff}
 .tierchip{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--kin-wash);color:var(--kin);border:1px solid color-mix(in srgb,var(--kin) 30%,transparent)}
-.fml{display:inline;background:transparent;border:none;border-bottom:2px dashed color-mix(in srgb,var(--verde) 50%,transparent);border-radius:0;padding:1px 4px;color:var(--verde-ink);white-space:pre-wrap;overflow-wrap:anywhere;outline:none;-webkit-user-modify:read-write-plaintext-only;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.fml:focus{border-bottom:2px solid var(--verde);box-shadow:none}
-.fml:empty::before{content:attr(data-ph);color:var(--ink3);opacity:.85;pointer-events:none}
+.fml{display:inline;background:color-mix(in srgb,var(--verde) 11%,transparent);border:none;border-bottom:2px dashed color-mix(in srgb,var(--verde) 55%,transparent);border-radius:7px 7px 0 0;padding:2px 7px;color:var(--verde-ink);white-space:pre-wrap;overflow-wrap:anywhere;outline:none;cursor:text;caret-color:var(--verde);-webkit-user-modify:read-write-plaintext-only;box-decoration-break:clone;-webkit-box-decoration-break:clone;transition:background .15s,box-shadow .15s}
+.fml:focus{border-bottom:2px solid var(--verde);background:color-mix(in srgb,var(--verde) 20%,transparent);box-shadow:0 0 0 2.5px color-mix(in srgb,var(--verde) 30%,transparent)}
+.fml:empty::before{content:"✎ " attr(data-ph);color:var(--ink3);opacity:.9;pointer-events:none}
+.fml:focus:empty::before{opacity:.55}
 .qhelp{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.5px solid var(--ink3);color:var(--ink2);font-size:.6rem;font-weight:700;vertical-align:text-top;margin-left:2px;padding:0;line-height:1}
 .plusdot{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--verde);color:var(--btn-ink);font-weight:900;font-size:.85rem;line-height:1;margin-left:4px;vertical-align:middle;position:relative;top:-1px;box-shadow:0 1px 2px #0002}
 h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
