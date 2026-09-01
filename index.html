@@ -1693,8 +1693,8 @@ function schedModal({date,edit,goalId,cat}={}){
       </div></label>`}
     <label class="field"><span class="lab">Notas <span class="muted">(opcional — van también al calendario)</span></span><textarea id="s-notes" rows="2" maxlength="300" placeholder="Detalles, enlaces, recordatorios…">${edit&&edit.notes?esc(edit.notes):''}</textarea></label>
     <div id="s-warn" class="tiny muted" style="margin-top:8px"></div>
-    <button class="btn big" style="margin-top:10px" id="s-go">${edit?'Guardar cambios':'Planificar'}</button>
-    ${edit?'':'<button class="btn big sec" style="margin-top:8px" id="s-gomore"><span>Planificar esta actividad y planificar <span style="white-space:nowrap">más <span class="plusdot">+</span></span></span></button>'}`);
+    <button class="btn big" style="margin-top:10px" id="s-go">${edit?'Guardar cambios':'Guardar'}</button>
+    ${edit?'':'<button class="btn big sec" style="margin-top:8px" id="s-gomore"><span>Guardar esta actividad y planificar <span style="white-space:nowrap">otra <span class="plusdot">+</span></span></span></button>'}`);
   mb.classList.add('sticky');
   const warn=()=>{const dv=$('#s-date',mb).value;
     $('#s-warn',mb).innerHTML=dv<=d.todayK&&!edit?'⚡ Programar para hoy cuenta como <b>improvisada (50%)</b>. Planificar con antelación paga completo.':'✅ Planificada con antelación: valor completo.'};
