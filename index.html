@@ -1371,6 +1371,16 @@ function showStreakInfo(){
     <p class="tiny muted" style="margin-top:10px">Si fallas un día sin planificar descanso, una Piedra protege tu racha automáticamente. Ganas una piedra cada semana con ≥80% de cumplimiento (máx. ${CONFIG.FREEZE_CAP}).</p>
     <p class="tiny" style="margin-top:10px"><b>Premios de racha:</b> ${CONFIG.STREAK_MS.map(x=>`${x.e} ${x.n} +${x.xp}`).join(' · ')} XP. Si la racha se rompe, puedes volver a ganarlos al reconstruirla.</p>`);
 }
+function showStreakRewards(){
+  const pm=myPM();if(!pm)return;
+  const next=CONFIG.STREAK_MS.find(x=>x.d>pm.dayStreak);
+  const rows=CONFIG.STREAK_MS.map(x=>{const got=pm.dayStreak>=x.d,isNext=!!next&&next.d===x.d;
+    return `<div class="row small" style="padding:7px 10px;border-radius:10px;${got?'background:var(--kin-wash);color:var(--kin);font-weight:700':isNext?'outline:1.5px dashed var(--kin);outline-offset:-1.5px':''}"><span style="width:24px;text-align:center">${x.e}</span><span class="grow">${x.n}</span><b class="${got?'':'gold'}">+${x.xp} XP</b>${got?'<span style="margin-left:6px">✓</span>':''}</div>`}).join('');
+  modal(`<h3>🔥 Premios de racha</h3>
+    <p class="small muted" style="margin-top:6px">${next?`Completa algo planificado cada día · a <b>${next.d-pm.dayStreak}</b> ${next.d-pm.dayStreak===1?'día':'días'} del premio ${next.e} ${next.n} <b class="gold">+${next.xp} XP</b>`:'🏮 ¡Todos los premios de racha conseguidos! Mantenla viva.'}</p>
+    <div class="vgap" style="margin-top:10px;gap:4px">${rows}</div>
+    <p class="tiny muted" style="margin-top:10px">Si la racha se rompe, puedes volver a ganarlos al reconstruirla.</p>`);
+}
 /* ---------- VISTA: HOY ---------- */
 function renderHoy(main,d){
   const m=me(),pm=myPM();
@@ -2127,18 +2137,12 @@ function renderLiga(main,d){
           <div style="width:29px;height:29px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:3px auto 0;font-size:.8rem;font-weight:800;
           ${hit?'background:var(--kin-bright);color:#2A2107':rest?'background:var(--verde-soft)':'background:var(--sunken);color:var(--ink3)'};
           ${day===d.todayK&&!hit?'outline:2px dashed var(--kin);outline-offset:-2px':''}">${hit?'✓':rest?'🛌':future?'':'·'}</div></div>`}).join('');
-      const next=CONFIG.STREAK_MS.find(x=>x.d>pm.dayStreak);
-      const chips=CONFIG.STREAK_MS.map(x=>{const got=pm.dayStreak>=x.d;
-        return `<span class="chip" style="${got?'background:var(--kin-wash);border-color:var(--kin);color:var(--kin)':''}">${x.e} ${x.n} · +${x.xp} XP${got?' ✓':''}</span>`}).join('');
       return `<div class="card">
-        <div class="row between"><h3 class="small">🔥 Tu racha diaria</h3><span class="tiny muted">récord: ${pm.dayStreakMax} ${pm.dayStreakMax===1?'día':'días'}</span></div>
+        <div class="row between"><h3 class="small">🔥 Tu racha diaria <button type="button" class="qhelp" id="lg-streakhelp" title="Premios de racha">?</button></h3><span class="tiny muted">récord: ${pm.dayStreakMax} ${pm.dayStreakMax===1?'día':'días'}</span></div>
         <div class="row" style="margin-top:10px;gap:16px;align-items:center">
           <div style="text-align:center;flex:none;min-width:64px"><div class="dnum" style="font-size:2.3rem;font-weight:900;color:var(--kin);line-height:1.1">${pm.dayStreak}</div><div class="tiny muted">${pm.dayStreak===1?'día seguido':'días seguidos'}</div></div>
           <div class="grow row" style="justify-content:space-between">${dots}</div>
         </div>
-        ${next?`<p class="tiny muted" style="margin-top:9px">Completa algo planificado cada día · a <b>${next.d-pm.dayStreak}</b> ${next.d-pm.dayStreak===1?'día':'días'} del premio ${next.e} ${next.n} <b class="gold">+${next.xp} XP</b></p>`
-          :`<p class="tiny gold" style="margin-top:9px">🏮 ¡Todos los premios de racha conseguidos! Mantenla viva.</p>`}
-        <div class="scroll-x" style="margin-top:8px">${chips}</div>
       </div>`})()}
     <div class="card">
       <div class="row between"><h3 class="small">Esta semana · en vivo</h3><span class="tiny muted">cierra dom 18:00</span></div>
@@ -2176,6 +2180,7 @@ function renderLiga(main,d){
     </div>
   </div>`;
   $('[data-a=meet]',main).onclick=()=>startMeeting();
+  const sh=$('#lg-streakhelp',main);if(sh)sh.onclick=()=>showStreakRewards();
 }
 function officialTable(wrec,d){
   const wk=wrec.wk;
