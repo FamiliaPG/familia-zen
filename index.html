@@ -129,8 +129,8 @@ input[type=date]{min-width:0;max-width:100%}
 .qhelp{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.5px solid var(--ink3);color:var(--ink2);font-size:.6rem;font-weight:700;vertical-align:text-top;margin-left:2px;padding:0;line-height:1}
 .plusdot{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--verde);color:var(--btn-ink);font-weight:900;font-size:.85rem;line-height:1;margin-left:4px;vertical-align:middle;position:relative;top:-1px;box-shadow:0 1px 2px #0002}
 h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
-.linklike{background:none;border:none;padding:0;font:inherit;font-size:.85rem;font-weight:700;color:var(--verde-ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px;text-decoration-color:color-mix(in srgb,var(--verde-ink) 40%,transparent)}
-.linklike:hover{text-decoration-color:var(--verde-ink)}
+.cardbtn{display:block;width:100%;font:inherit;text-align:left;color:inherit;cursor:pointer}
+.cardbtn:hover{border-color:var(--verde)}
 
 /* modal */
 #modal-root:empty{display:none}
@@ -2129,8 +2129,15 @@ function renderGuia(main,d){
         ${row('R','Relevant / Relevante','Tiene sentido dentro de las prioridades, valores, responsabilidades o propósito general.','¿Por qué es importante? ¿A qué propósito o prioridad contribuye?')}
         ${row('T','Time-bound / Con tiempo definido','Establece una fecha límite o periodo específico que crea enfoque y un punto claro de revisión.','¿Cuándo debe estar completada? ¿Qué hitos o fechas intermedias necesito?')}
       </table></div>
-      <p style="margin:12px 0 2px;text-align:center"><button type="button" class="linklike" data-a="smartex">💡 Ver ejemplos por categoría <span aria-hidden="true">→</span></button></p>
     </div>
+    <button type="button" class="card cardbtn" data-a="smartex">
+      <div class="row" style="gap:12px;align-items:center">
+        <span style="font-size:1.6rem;flex:none">💡</span>
+        <div class="grow"><b>Ver ejemplos por categoría</b>
+          <p class="tiny muted" style="margin:3px 0 0">Dos SMART Goals listos por cada categoría · 🌿🏃📖🥗🧘🎓🕊️🤝💼🌙✨</p></div>
+        <span aria-hidden="true" style="font-size:1.25rem;font-weight:800;color:var(--verde-ink);flex:none">→</span>
+      </div>
+    </button>
     <div class="card" style="background:var(--verde-wash)">
       <div class="row between" style="gap:8px;flex-wrap:wrap"><div class="eyebrow">Fórmula práctica para metas SMART</div>
         <div class="row" style="gap:6px;flex:none">
