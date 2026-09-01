@@ -121,8 +121,9 @@ input[type=date]{min-width:0;max-width:100%}
 .checkbtn:active{transform:scale(.9)}
 .checkbtn.on{background:var(--verde);border-color:var(--verde);color:#fff}
 .tierchip{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--kin-wash);color:var(--kin);border:1px solid color-mix(in srgb,var(--kin) 30%,transparent)}
-.fml{display:inline-block;width:12ch;max-width:100%;background:transparent;border:none;border-bottom:2px dashed color-mix(in srgb,var(--verde) 50%,transparent);border-radius:0;padding:1px 4px;color:var(--verde-ink);text-align:center}
+.fml{display:inline;background:transparent;border:none;border-bottom:2px dashed color-mix(in srgb,var(--verde) 50%,transparent);border-radius:0;padding:1px 4px;color:var(--verde-ink);white-space:pre-wrap;overflow-wrap:anywhere;outline:none;-webkit-user-modify:read-write-plaintext-only;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .fml:focus{border-bottom:2px solid var(--verde);box-shadow:none}
+.fml:empty::before{content:attr(data-ph);color:var(--ink3);opacity:.85;pointer-events:none}
 .qhelp{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.5px solid var(--ink3);color:var(--ink2);font-size:.6rem;font-weight:700;vertical-align:text-top;margin-left:2px;padding:0;line-height:1}
 .plusdot{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--verde);color:var(--btn-ink);font-weight:900;font-size:.85rem;line-height:1;margin-left:4px;vertical-align:middle;position:relative;top:-1px;box-shadow:0 1px 2px #0002}
 h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
@@ -1954,7 +1955,7 @@ function goalEditor(gid){
   const mb=modal(`<h3>${g?'Editar meta':'Nueva meta SMART'}</h3>
     <label class="field"><span class="lab">Área / Proyecto</span><div class="scroll-x" id="g-cats">${CAT_IDS.map(c=>`<button class="chip ${c===area?'cat':''}" data-cat="${c}" style="${c===area?`background:${CATS[c].c}`:''}">${CATS[c].e} ${CATS[c].n}</button>`).join('')}</div></label>
     <label class="field">
-      <p style="font-family:var(--font-d);font-weight:700;margin:2px 0 0;font-size:.95rem;line-height:2.2">Antes de <input class="fml" id="gf-fecha" placeholder="fecha" value="${esc(sf.fecha||'')}">, lograré <input class="fml" id="gf-res" placeholder="resultado específico" value="${esc(sf.res||'')}">, medido mediante <input class="fml" id="gf-ind" placeholder="indicador o métrica" value="${esc(sf.ind||'')}">, realizando <input class="fml" id="gf-acc" placeholder="acciones clave" value="${esc(sf.acc||'')}">, porque contribuye a <input class="fml" id="gf-prop" placeholder="propósito o prioridad" value="${esc(sf.prop||'')}">.</p></label>
+      <p style="font-family:var(--font-d);font-weight:700;margin:2px 0 0;font-size:.95rem;line-height:2.2">Antes de <span class="fml" id="gf-fecha" contenteditable="true" role="textbox" aria-label="fecha" data-ph="fecha">${esc(sf.fecha||'')}</span>, lograré <span class="fml" id="gf-res" contenteditable="true" role="textbox" aria-label="resultado específico" data-ph="resultado específico">${esc(sf.res||'')}</span>, medido mediante <span class="fml" id="gf-ind" contenteditable="true" role="textbox" aria-label="indicador o métrica" data-ph="indicador o métrica">${esc(sf.ind||'')}</span>, realizando <span class="fml" id="gf-acc" contenteditable="true" role="textbox" aria-label="acciones clave" data-ph="acciones clave">${esc(sf.acc||'')}</span>, porque contribuye a <span class="fml" id="gf-prop" contenteditable="true" role="textbox" aria-label="propósito o prioridad" data-ph="propósito o prioridad">${esc(sf.prop||'')}</span>.</p></label>
     <label class="field"><span class="lab">S · Específico — ¿qué exactamente quiero lograr?</span><textarea id="g-s" rows="2">${esc(f.s||'')}</textarea></label>
     <label class="field"><span class="lab">M · Medible — ¿cómo mediré el progreso/éxito?</span><textarea id="g-m" rows="2">${esc(f.mzbl||'')}</textarea></label>
     <label class="field"><span class="lab">A · Alcanzable — ¿por qué es viable y qué recursos necesito?</span><textarea id="g-a" rows="2">${esc(f.alc||'')}</textarea></label>
@@ -1981,18 +1982,17 @@ function goalEditor(gid){
     <button class="btn big sec" style="margin-top:8px" id="g-goplan">${g?'Guardar y planificar 📆':'Crear meta y planificar 📆'}</button>
     ${g?`<button class="btn big ghost" style="margin-top:8px;color:var(--clay);border-color:color-mix(in srgb,var(--clay) 40%,transparent)" id="g-del">🗑 Borrar esta meta</button>`:''}`);
   mb.classList.add('sticky');
-  const fitFml=i=>{i.style.width=Math.min(40,Math.max(i.placeholder.length,i.value.length)+2)+'ch'};
-  $$('.fml',mb).forEach(i=>{i.oninput=()=>fitFml(i);fitFml(i)});
+  fmlInit(mb);
   // sincronía en dos direcciones: espacios de la fórmula ↔ campos S/M/R
   [['#gf-res','#g-s'],['#gf-ind','#g-m'],['#gf-prop','#g-r']].forEach(([fa,fb])=>{
     const ia=$(fa,mb),ib=$(fb,mb);
     ia.addEventListener('input',()=>{ib.value=ia.value});
-    ib.addEventListener('input',()=>{ia.value=ib.value;fitFml(ia)});
+    ib.addEventListener('input',()=>{ia.value=ib.value});
   });
   // elegir T · Fecha límite escribe la fecha en la oración
   $('#g-t',mb).addEventListener('change',()=>{
     const v=$('#g-t',mb).value;if(!v)return;
-    const ff=$('#gf-fecha',mb);ff.value=fmtLong(v);fitFml(ff);
+    const ff=$('#gf-fecha',mb);ff.value=fmtLong(v);
   });
   const gdel=$('#g-del',mb);
   if(gdel)gdel.onclick=()=>{
@@ -2049,6 +2049,17 @@ function goalEditor(gid){
   $('#g-go',mb).onclick=()=>{if(save())toast(g?'Meta actualizada':'Meta creada 🎯 Ahora planifica su primera acción')};
   $('#g-goplan',mb).onclick=()=>{const id=save();if(!id)return;toast(g?'Meta actualizada':'Meta creada 🎯');schedModal({goalId:id,date:addDays(D().todayK,1)})};
 }
+/* espacios de la fórmula: <span contenteditable> que se ajustan y saltan de línea; exponen .value/.placeholder como un input */
+function fmlInit(root){
+  $$('.fml',root).forEach(el=>{
+    if(el.tagName!=='SPAN'||el._fml)return;el._fml=true;
+    Object.defineProperty(el,'value',{get(){return el.textContent.replace(/\n+/g,' ')},set(v){el.textContent=v==null?'':String(v)}});
+    Object.defineProperty(el,'placeholder',{get(){return el.dataset.ph||''}});
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur()}});
+    el.addEventListener('paste',e=>{e.preventDefault();const t=((e.clipboardData||window.clipboardData).getData('text/plain')||'').replace(/\s+/g,' ');document.execCommand('insertText',false,t)});
+    el.addEventListener('input',()=>{if(!el.textContent)el.innerHTML=''});
+  });
+}
 /* ---------- VISTA: GUÍA ---------- */
 const FORMULA_DRAFT={};
 function renderGuia(main,d){
@@ -2072,7 +2083,7 @@ function renderGuia(main,d){
           <button class="btn small sec" data-a="resetform" style="color:var(--verde-ink)">↺ Limpiar</button>
           <button class="btn small sec" data-a="copyform" style="color:var(--verde-ink)">📋 Copiar</button>
         </div></div>
-      <p id="formula-txt" style="font-family:var(--font-d);font-weight:700;margin-top:8px;font-size:.95rem;line-height:2.2">«Antes de <input class="fml" id="f-fecha" placeholder="fecha">, lograré <input class="fml" id="f-res" placeholder="resultado específico">, medido mediante <input class="fml" id="f-ind" placeholder="indicador o métrica">, realizando <input class="fml" id="f-acc" placeholder="acciones clave">, porque contribuye a <input class="fml" id="f-prop" placeholder="propósito o prioridad">.»</p>
+      <p id="formula-txt" style="font-family:var(--font-d);font-weight:700;margin-top:8px;font-size:.95rem;line-height:2.2">«Antes de <span class="fml" id="f-fecha" contenteditable="true" role="textbox" aria-label="fecha" data-ph="fecha"></span>, lograré <span class="fml" id="f-res" contenteditable="true" role="textbox" aria-label="resultado específico" data-ph="resultado específico"></span>, medido mediante <span class="fml" id="f-ind" contenteditable="true" role="textbox" aria-label="indicador o métrica" data-ph="indicador o métrica"></span>, realizando <span class="fml" id="f-acc" contenteditable="true" role="textbox" aria-label="acciones clave" data-ph="acciones clave"></span>, porque contribuye a <span class="fml" id="f-prop" contenteditable="true" role="textbox" aria-label="propósito o prioridad" data-ph="propósito o prioridad"></span>.»</p>
       <p class="tiny muted" style="margin-top:6px">Completa los espacios y toca 📋 Copiar para llevarte tu meta lista.</p>
     </div>
     <div class="card">
@@ -2105,10 +2116,10 @@ function renderGuia(main,d){
     <details class="zen"><summary>🤝 Honestidad</summary><div class="inner small muted">
       <p>Las actividades grandes piden evidencia; las metas piden su KPI. En la reunión se muestran los 3 mejores registros de cada uno. Cualquiera puede plantear una <b>duda</b>: si la familia acuerda que no cuenta, solo se revierten los puntos — sin multas ni castigos. 8 semanas sin anulaciones = insignia <b>Palabra Firme</b> (+2% permanente).</p></div></details>
   </div>`;
+  fmlInit(main);
   $$('.fml',main).forEach(i=>{
     if(FORMULA_DRAFT[i.id])i.value=FORMULA_DRAFT[i.id];
-    const fit=()=>{i.style.width=Math.min(40,Math.max(i.placeholder.length,i.value.length)+2)+'ch'};
-    i.oninput=()=>{FORMULA_DRAFT[i.id]=i.value;fit()};fit();
+    i.addEventListener('input',()=>{FORMULA_DRAFT[i.id]=i.value});
   });
   const cb=$('[data-a=copyform]',main);
   if(cb)cb.onclick=async()=>{
@@ -2119,7 +2130,7 @@ function renderGuia(main,d){
   };
   const rb=$('[data-a=resetform]',main);
   if(rb)rb.onclick=()=>{
-    $$('.fml',main).forEach(i=>{i.value='';delete FORMULA_DRAFT[i.id];i.style.width=Math.min(40,i.placeholder.length+2)+'ch'});
+    $$('.fml',main).forEach(i=>{i.value='';delete FORMULA_DRAFT[i.id]});
     toast('Fórmula en blanco ↺');
   };
 }
