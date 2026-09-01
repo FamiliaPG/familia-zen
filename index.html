@@ -338,9 +338,13 @@ table.zen{width:100%;border-collapse:collapse;font-size:.86rem}
 table.zen th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);padding:7px 8px;border-bottom:1.5px solid var(--line2)}
 table.zen td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 .tablewrap{overflow-x:auto}
-.badgecell{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:12px 6px;border-radius:14px;border:1px solid var(--line);background:var(--surface2)}
-.badgecell.locked{opacity:.38;filter:grayscale(.7)}
-.badgecell .bic{font-size:1.7rem}
+.badgecell{--rc:var(--ink3);position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:12px 6px;border-radius:14px;border:1px solid var(--line);background:var(--surface2)}
+.badgecell .bic{font-size:1.7rem;line-height:1;width:54px;height:54px;display:grid;place-items:center;border-radius:50%;background:var(--surface);border:2px solid var(--line)}
+.badgecell.won{border-color:color-mix(in srgb,var(--rc) 45%,var(--line));background:color-mix(in srgb,var(--rc) 7%,var(--surface2))}
+.badgecell.won .bic{background:color-mix(in srgb,var(--rc) 20%,var(--surface));border-color:var(--rc);box-shadow:0 0 0 3px color-mix(in srgb,var(--rc) 22%,transparent),0 6px 16px color-mix(in srgb,var(--rc) 30%,transparent)}
+.badgecell.won .bwon{position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:var(--rc);color:#fff;font-size:.62rem;font-weight:900;display:grid;place-items:center;box-shadow:0 1px 3px #0003}
+.badgecell.locked{opacity:.42}
+.badgecell.locked .bic{filter:grayscale(1) contrast(.85);opacity:.75}
 .raritychip{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px}
 #confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
 .flypt{position:fixed;z-index:210;font-family:var(--font-d);font-weight:900;color:var(--kin);pointer-events:none;animation:flyup 1.1s ease-out both;font-size:1.5rem;text-shadow:0 1px 0 var(--surface)}
@@ -483,7 +487,7 @@ const AVATAR_EMOJIS=['🦊','🐼','🐨','🦉','🐯','🦁','🐸','🐢','�
 const MEMBER_COLORS=['#33684B','#C4693B','#5A6BA8','#A8842C','#8A79B8','#3D8E9A','#C25E72','#7A9A3D'];
 /* ---------- insignias (predicados puros sobre stats) ---------- */
 const BADGES=[
- {id:'primerpaso',n:'Primer Paso',e:'👣',r:'comun',xp:50,d:'Completa tu primera actividad planificada',t:s=>s.plannedDone>=1},
+ {id:'primerpaso',n:'Primer Paso',e:'🥾',r:'comun',xp:50,d:'Completa tu primera actividad planificada',t:s=>s.plannedDone>=1},
  {id:'sinprisa',n:'Sin Prisa',e:'🍃',r:'comun',xp:125,d:'Una semana completa sin registros tardíos',t:s=>s.weeksNoBackfill>=1},
  {id:'madrugador',n:'Madrugador',e:'🌅',r:'comun',xp:100,d:'10 actividades completadas antes de las 8:00',t:s=>s.before8>=10},
  {id:'cuerposereno',n:'Cuerpo Sereno',e:'🌿',r:'rara',xp:250,d:'8 semanas seguidas con Salud',t:s=>(s.catWeekRun.salud||0)>=8},
@@ -1949,7 +1953,6 @@ function goalEditor(gid){
     <div class="hr"></div>
     <div class="eyebrow">El juego 🎋</div>
     <label class="field"><span class="lab">Identidad — proclama en positivo quién eres al vivir esta meta</span><input id="g-id" value="${esc(f.identidad||'')}" placeholder="Ej. Soy alguien que se mueve todos los días"></label>
-    <label class="field"><span class="lab">Plan B de 2 minutos — versión mini de tu meta para días difíciles</span><input id="g-min" value="${esc(f.minVersion||'')}" placeholder="Ej. Caminar 5 minutos"></label>
     <label class="field"><span class="lab">Acciones / próximos pasos (cada línea se puede planificar)</span>
       <div class="vgap" id="g-acts"></div>
       <div class="row" style="margin-top:8px;gap:6px"><input id="g-newact" placeholder="Ej. Correr 30 min" style="flex:2">
@@ -2017,7 +2020,7 @@ function goalEditor(gid){
     const fields={area,objetivo,s:v('#g-s'),mzbl:v('#g-m'),alc:v('#g-a'),rel:v('#g-r'),
       fechaLimite:$('#g-t',mb).value||null,estado:$('#g-est',mb).value,smartFinal,sf:sfv,
       kpiUnit:v('#g-kpiu'),kpiTarget:+$('#g-kpit',mb).value||null,
-      identidad:v('#g-id'),minVersion:v('#g-min'),notas:v('#g-notas'),
+      identidad:v('#g-id'),notas:v('#g-notas'),
       progreso:g?progresoAt(g,Date.now()):0};
     if(g)appendEvents([{type:'goal.update',gid,f:fields,actions}]);
     else appendEvents([{type:'goal.create',gid:uid(),m:SESSION,f:fields,actions}]);
@@ -2662,7 +2665,7 @@ function renderPerfil(main,d){
     </div>
     ${sendasEarned.length?`<div class="card"><h3 class="small">🥋 Sendas</h3>
       <div class="grid3" style="margin-top:10px">${sendasEarned.map(([c,l])=>`
-        <div class="badgecell"><span class="bic">${CATS[c].e}</span><b class="tiny">${sendaTitle(c,l)}</b><span class="tiny muted">${CATS[c].n} · Nv ${l}</span></div>`).join('')}</div></div>`:''}
+        <div class="badgecell won" style="--rc:${CATS[c].c}"><span class="bic">${CATS[c].e}</span><b class="tiny">${sendaTitle(c,l)}</b><span class="tiny muted">${CATS[c].n} · Nv ${l}</span></div>`).join('')}</div></div>`:''}
     ${trophies.length?`<div class="card"><h3 class="small">🏆 Salón de Trofeos</h3>
       <div class="vgap" style="margin-top:8px">${trophies.map(g=>`
         <div class="row small"><span>${g.honorClosed?'🙏':'🏆'}</span><span class="grow">${esc(g.f.objetivo||g.f.smartFinal)}</span><span class="tiny muted">${fmtDate(dkey(new Date(g.completedT)))}</span></div>`).join('')}</div></div>`:''}
@@ -2670,7 +2673,7 @@ function renderPerfil(main,d){
       <div class="row between"><h3 class="small">🎖 Insignias · ${pm.badges.size}/${BADGES.length}</h3><span class="tiny muted">💛 ${CONFIG.KUDOS_WEEK-kudosGiven} kudos restantes esta semana</span></div>
       <div class="grid3" style="margin-top:10px">
         ${BADGES.filter(b=>!b.hidden||pm.badges.has(b.id)).map(b=>{const on=pm.badges.has(b.id);const rc=RARITY[b.r];
-          return `<div class="badgecell ${on?'':'locked'}" title="${esc(b.d)}"><span class="bic">${b.e}</span><b class="tiny">${b.n}</b>
+          return `<div class="badgecell ${on?'won':'locked'}" style="--rc:${rc.c}" title="${esc(b.d)}${on?' · ¡Ganada!':''}">${on?'<span class="bwon">✓</span>':''}<span class="bic">${b.e}</span><b class="tiny">${b.n}</b>
           <span class="raritychip" style="background:color-mix(in srgb,${rc.c} 16%,transparent);color:${rc.c}">${rc.n}</span></div>`}).join('')}
       </div>
       <p class="tiny muted" style="margin-top:8px">Hay insignias ocultas que se revelan al ganarlas ✨</p>
