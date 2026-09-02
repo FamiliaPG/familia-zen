@@ -145,6 +145,10 @@ h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
 .avopt .tiny{line-height:1.1;text-align:center}
 .avsw{width:34px;height:34px;border-radius:50%;border:3px solid transparent;box-shadow:inset 0 0 0 1px #0002}
 .avsw.on{border-color:var(--ink)}
+.avopt.locked{opacity:.55;position:relative}
+.avopt.locked svg{filter:grayscale(1)}
+.avlock{position:absolute;top:4px;right:6px;font-size:.8rem}
+.avsw.locked{opacity:.5;font-size:.8rem;display:grid;place-items:center}
 .avatar svg{display:block}
 .g-char .head svg{display:block}
 .postal-mini{cursor:pointer}
@@ -1192,7 +1196,8 @@ function avatarHtml(m,size=40,ringPct=null){
     const r=size/2+3, c=2*Math.PI*r;
     ring=`<svg style="position:absolute;inset:-5px;width:${size+10}px;height:${size+10}px" viewBox="0 0 ${size+10} ${size+10}"><circle cx="${(size+10)/2}" cy="${(size+10)/2}" r="${r}" fill="none" stroke="var(--sunken)" stroke-width="3"/><circle cx="${(size+10)/2}" cy="${(size+10)/2}" r="${r}" fill="none" stroke="var(--kin-bright)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-ringPct)}" transform="rotate(-90 ${(size+10)/2} ${(size+10)/2})"/></svg>`;
   }
-  const face=(m&&m.avatar)?avatarSvg(m.avatar,{size:Math.max(8,size-4),bg:mixHex('#FBFCF8',m.color,.18)}):'';
+  const eff=(m&&m.avatar)?avatarFor(D(),m):null;
+  const face=eff?avatarSvg(eff,{size:Math.max(8,size-4),bg:mixHex('#FBFCF8',m.color,.18)}):'';
   return `<div style="position:relative;width:${size}px;height:${size}px;flex:none">${ring}<div class="avatar" style="width:${size}px;height:${size}px;font-size:${fs}px;border-color:${m?esc(m.color):'var(--line)'}${face?';overflow:hidden;padding:0':''}">${face||(m?esc(m.emoji):'?')}</div></div>`;
 }
 const catChip=c=>{const x=CATS[c]||CATS.otro;return `<span class="chip cat" style="background:${x.c}">${x.e} ${x.n}</span>`};
@@ -1265,6 +1270,7 @@ function rerender(){
   renderTopbar(top,d);renderTabbar(tab);
   const R={hoy:renderHoy,cal:renderCal,metas:renderMetas,liga:renderLiga,jardin:renderJardin,guia:renderGuia,perfil:renderPerfil}[VIEW]||renderHoy;
   R(main,d);
+  setTimeout(checkUnlocks,600);
 }
 function closeModalsSafe(){/* los modales sobreviven a rerender solo si están marcados sticky */
   $$('#modal-root .mback:not(.sticky)').forEach(e=>e.remove());
@@ -2206,6 +2212,9 @@ function renderGuia(main,d){
       <p>La racha semanal nunca se reinicia a cero: si fallas, se <b>parte a la mitad</b>. Y si vuelves tras días fuera, tu primera actividad vale ×2. Aquí nadie te regaña: se vuelve a empezar, siempre.</p></div></details>
     <details class="zen"><summary>🤝 Honestidad</summary><div class="inner small muted">
       <p>Las actividades grandes piden evidencia; las metas piden su KPI. En la reunión se muestran los 3 mejores registros de cada uno. Cualquiera puede plantear una <b>duda</b>: si la familia acuerda que no cuenta, solo se revierten los puntos — sin multas ni castigos. 8 semanas sin anulaciones = insignia <b>Palabra Firme</b> (+2% permanente).</p></div></details>
+    <details class="zen"><summary>🎨 Tu avatar y sus desbloqueables</summary><div class="inner small muted">
+      <p>En Perfil → <b>🎨 Mi avatar</b> dibujas tu cara: piel, pelo, ojos, gafas, sombrero, ropa… Sale en la app, en el Jardín y en las postales; tu emoji sigue para los textos.</p>
+      <p>Algunas piezas se <b>ganan jugando</b> (nunca se compran): ${AV_UNLOCKS.map(u=>`${u.e} ${u.n} — ${u.d}`).join(' · ')}.</p></div></details>
     <details class="zen"><summary>📮 Postales y código de regalo</summary><div class="inner small muted">
       <p>Cada domingo, al cerrar la semana (18:00), nace una <b>postal</b> (si además la sellan en la reunión, lleva el sello 📿): una imagen con lo que sembramos juntos (sin puestos ni podio) para enviar a los abuelos, al grupo de la familia o a quien quieras. También hay postales de hito (una meta cumplida, una racha de 7+ días, una insignia rara o mejor) y «Nuestra historia»: tres frases (lo que logramos, lo que aprendimos y un consejo para una familia que empieza). La postal semanal viene pre-rellenada con los logros y aprendizajes de la semana y aparece en Hoy desde el domingo al cerrar la semana hasta el martes.</p>
       <p><b>Privacidad:</b> la postal nunca lleva el enlace de la app ni la clave de acceso. En «Público» los menores salen solo con su avatar, sin nombre. Solo los adultos envían; cualquiera puede guardarla en el álbum (Liga). Compartir no da puntos ni XP.</p>
@@ -2428,7 +2437,7 @@ function renderJardin(main,d){
     const off=(k-(sibs.length-1)/2)*6;
     return `<div class="g-char ${mm.id===m.id?'me':''}" data-gc="${mm.id}" style="left:${g.x+off}%;top:${g.y}%">
       <div class="rig" style="--mc:${esc(mm.color)};animation-delay:${(i*0.7)%3}s">
-        <span class="head">${mm.avatar?avatarSvg(mm.avatar,{size:34,head:true}):esc(mm.emoji)}</span>
+        <span class="head">${avatarFor(d,mm)?avatarSvg(avatarFor(d,mm),{size:34,head:true}):esc(mm.emoji)}</span>
         <span class="robe"><span class="arm l"></span><span class="arm r"></span><span class="obiknot"></span></span>
         <span class="legs"><span class="leg l"></span><span class="leg r"></span></span>
       </div>
@@ -3251,9 +3260,57 @@ function sanitizeAvatar(c){
   o.freckles=!!c.freckles;o.tie=!!c.tie;
   return o;
 }
+/* ---- desbloqueables: se ganan jugando (nunca se compran); se aplican al dibujar, no solo al guardar ---- */
+const AV_UNLOCKS=[
+  {key:'top:suit',k:'top',v:'suit',n:'Traje de gala',e:'🤵',d:'Completa tu primera meta SMART',t:(d,m,pm)=>[...d.goals.values()].some(g=>g.m===m.id&&g.completedT&&!g.honorClosed&&!g.deleted)},
+  {key:'hat:beret',k:'hat',v:'beret',n:'Boina de artista',e:'🎨',d:'Gana una insignia Rara o mejor',t:(d,m,pm)=>[...pm.badges].some(id=>{const b=BADGES.find(x=>x.id===id);return !!b&&b.r!=='comun'})},
+  {key:'hairColor:fun',k:'hairColor',v:AVATAR_OPTS.hairColor[AVATAR_OPTS.hairColor.length-1],n:'Pelo de color',e:'🌈',d:'Una Semana Impecable',t:(d,m,pm)=>(pm.stats.perfectWeeks||0)>=1},
+  {key:'hat:straw',k:'hat',v:'straw',n:'Sombrero de paja',e:'👒',d:'4 reuniones selladas contigo presente',t:(d,m,pm)=>[...d.weeks.values()].filter(w=>w.sealed&&(w.sealAtt||[]).includes(m.id)).length>=4},
+  {key:'glasses:sun',k:'glasses',v:'sun',n:'Gafas de sol',e:'😎',d:'Racha diaria de 30 días',t:(d,m,pm)=>(pm.dayStreakMax||0)>=30},
+  {key:'hat:crown',k:'hat',v:'crown',n:'Corona',e:'👑',d:'Una insignia Legendaria o Mítica',t:(d,m,pm)=>[...pm.badges].some(id=>{const b=BADGES.find(x=>x.id===id);return !!b&&(b.r==='legendaria'||b.r==='mitica')})},
+];
+const AV_LOCK_DEFAULT={top:'tee',hat:'none',glasses:'none',hairColor:null};
+function avatarUnlocks(d,mid){
+  if(!d._unl)d._unl=new Map();
+  if(d._unl.has(mid))return d._unl.get(mid);
+  const m=d.members.get(mid),pm=d.perM.get(mid),out=new Set();
+  if(m&&pm)for(const u of AV_UNLOCKS){try{if(u.t(d,m,pm))out.add(u.key)}catch(e){}}
+  d._unl.set(mid,out);return out;
+}
+const avLockOf=(d,mid,k,v)=>{const u=AV_UNLOCKS.find(x=>x.k===k&&x.v===v);return (u&&!avatarUnlocks(d,mid).has(u.key))?u:null};
+function stripLocked(d,mid,cfg){
+  const o=Object.assign({},cfg);
+  for(const u of AV_UNLOCKS){if(o[u.k]===u.v&&!avatarUnlocks(d,mid).has(u.key)){const def=AV_LOCK_DEFAULT[u.k];if(def==null){const dv=avatarDefault()[u.k];o[u.k]=dv}else o[u.k]=def}}
+  return o;
+}
+function avatarFor(d,m){
+  if(!m||!m.avatar)return null;
+  if(!d._avf)d._avf=new Map();
+  if(d._avf.has(m.id))return d._avf.get(m.id);
+  const eff=stripLocked(d,m.id,m.avatar);d._avf.set(m.id,eff);return eff;
+}
+/* celebración al ganar un desbloqueo (solo para quien está en sesión; se compara con lo visto en este dispositivo) */
+function checkUnlocks(){
+  try{
+    const d=D(),m=me();if(!m||!d.fam||document.querySelector('#modal-root .mback')||MEET)return;
+    const key='fz-unl-'+location.pathname+'-'+m.id,now=[...avatarUnlocks(d,m.id)];
+    let seen=null;try{seen=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}
+    if(!Array.isArray(seen)){try{localStorage.setItem(key,JSON.stringify(now))}catch(e){}return}
+    const fresh=now.filter(k=>!seen.includes(k));
+    if(!fresh.length)return;
+    try{localStorage.setItem(key,JSON.stringify(now))}catch(e){}
+    const items=fresh.map(k=>AV_UNLOCKS.find(u=>u.key===k)).filter(Boolean);
+    confetti(90);chime('up');
+    const mb=modal(`<div style="text-align:center"><div style="font-size:3rem">🎁</div><h3>¡Nuevo desbloqueo para tu avatar!</h3>
+      <div class="vgap" style="margin-top:10px">${items.map(u=>`<div class="row small" style="justify-content:center;gap:8px"><span style="font-size:1.4rem">${u.e}</span><b>${esc(u.n)}</b><span class="muted">· ${esc(u.d)}</span></div>`).join('')}</div>
+      <button class="btn small" id="unl-go" style="margin-top:14px">🎨 Ponérmelo</button></div>`);
+    $('#unl-go',mb).onclick=()=>{mb.remove();avatarEditor(m.id)};
+  }catch(e){}
+}
 function avatarEditor(mid){
   const d=D(),m=d.members.get(mid);if(!m)return;
-  let cfg=m.avatar?Object.assign(avatarDefault(),m.avatar):avatarDefault();
+  let cfg=m.avatar?Object.assign(avatarDefault(),avatarFor(d,m)):avatarDefault();
+  const unl=avatarUnlocks(d,mid);
   const mb=modal(`<div class="row between"><h3>🎨 Mi avatar</h3><button class="chip" id="av-close" aria-label="Cerrar">✕</button></div>
     <div class="row" style="gap:14px;margin-top:10px;align-items:center">
       <div id="av-prev"></div>
@@ -3261,6 +3318,9 @@ function avatarEditor(mid){
         <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn small sec" id="av-rand">🎲 Sorpréndeme</button>${m.avatar?`<button class="btn small ghost" id="av-emoji">Volver a mi emoji</button>`:''}</div></div>
     </div>
     <div id="av-rows" style="margin-top:6px"></div>
+    <div style="margin-top:16px"><div class="eyebrow">🎁 Desbloqueables · ${unl.size}/${AV_UNLOCKS.length}</div>
+      <div class="vgap" style="margin-top:6px;gap:4px">${AV_UNLOCKS.map(u=>`<div class="row small" style="gap:8px;padding:6px 10px;border-radius:10px;${unl.has(u.key)?'background:var(--kin-wash);color:var(--kin);font-weight:700':'color:var(--ink2)'}"><span style="width:24px;text-align:center">${u.e}</span><span class="grow">${esc(u.n)} <span class="tiny muted">· ${esc(u.d)}</span></span><span>${unl.has(u.key)?'✓':'🔒'}</span></div>`).join('')}</div>
+      <p class="tiny muted" style="margin:8px 0 0">Se ganan jugando; nunca se compran.</p></div>
     <div class="sheet-actions"><button class="btn big" id="av-save">Guardar mi avatar</button></div>`);
   mb.classList.add('sticky');
   const prev=$('#av-prev',mb),rows=$('#av-rows',mb);
@@ -3271,20 +3331,20 @@ function avatarEditor(mid){
       const opts=AVATAR_OPTS[k]||[];
       if(k==='topColor'&&cfg.top==='suit'&&false)return '';
       const items=opts.map(v=>swatchKeys.includes(k)
-        ?`<button class="avsw ${cfg[k]===v?'on':''}" data-k="${k}" data-v="${esc(v)}" style="background:${esc(v)}" title="${esc(avLabel(k,v))}" aria-label="${esc(avLabel(k,v))}" aria-pressed="${cfg[k]===v}"></button>`
-        :`<button class="avopt ${cfg[k]===v?'on':''}" data-k="${k}" data-v="${esc(v)}" title="${esc(avLabel(k,v))}" aria-pressed="${cfg[k]===v}">${avatarSvg(Object.assign({},cfg,{[k]:v}),{size:46,head:!['top','topColor'].includes(k),bg:'#F3F1EA'})}<span class="tiny">${esc(avLabel(k,v))}</span></button>`).join('');
+        ?(()=>{const lk=avLockOf(d,mid,k,v);return `<button class="avsw ${cfg[k]===v?'on':''} ${lk?'locked':''}" data-k="${k}" data-v="${esc(v)}" ${lk?`data-lock="${esc(lk.d)}"`:''} style="background:${esc(v)}" title="${esc(lk?avLabel(k,v)+' · 🔒 '+lk.d:avLabel(k,v))}" aria-label="${esc(avLabel(k,v))}" aria-pressed="${cfg[k]===v}">${lk?'🔒':''}</button>`})()
+        :(()=>{const lk=avLockOf(d,mid,k,v);return `<button class="avopt ${cfg[k]===v?'on':''} ${lk?'locked':''}" data-k="${k}" data-v="${esc(v)}" ${lk?`data-lock="${esc(lk.d)}"`:''} title="${esc(lk?avLabel(k,v)+' · 🔒 '+lk.d:avLabel(k,v))}" aria-pressed="${cfg[k]===v}">${lk?'<span class="avlock">🔒</span>':''}${avatarSvg(Object.assign({},cfg,{[k]:v}),{size:46,head:!['top','topColor'].includes(k),bg:'#F3F1EA'})}<span class="tiny">${esc(avLabel(k,v))}</span></button>`})()).join('');
       const extra=k==='eyes'?`<label class="row small" style="gap:6px;margin-top:6px"><input type="checkbox" id="av-freckles" ${cfg.freckles?'checked':''} style="width:auto">Pecas</label>`:k==='top'?`<label class="row small" style="gap:6px;margin-top:6px"><input type="checkbox" id="av-tie" ${cfg.tie?'checked':''} ${['shirt','suit'].includes(cfg.top)?'':'disabled'} style="width:auto">Corbata <span class="tiny muted">(con camisa o traje)</span></label>`:'';
       return `<div style="margin-top:12px" role="group" aria-label="${esc(AV_TITLES[k]||k)}"><div class="eyebrow">${AV_TITLES[k]||k}</div><div class="${swatchKeys.includes(k)?'row':'avgrid'}" style="${swatchKeys.includes(k)?'gap:8px;flex-wrap:wrap;margin-top:6px':''}">${items}</div>${extra}</div>`;
     }).join('');
-    $$('[data-k]',rows).forEach(b=>b.onclick=()=>{const k=b.dataset.k,v=b.dataset.v;cfg[k]=v;if(k==='top'&&!['shirt','suit'].includes(cfg.top))cfg.tie=false;paintPrev();paintRows();try{const nb=rows.querySelector(`[data-k="${k}"][data-v="${CSS.escape(v)}"]`);if(nb)nb.focus({preventScroll:true})}catch(e){}});
+    $$('[data-k]',rows).forEach(b=>b.onclick=()=>{const k=b.dataset.k,v=b.dataset.v;if(b.dataset.lock){toast('🔒 Se desbloquea: '+b.dataset.lock,3200);return}cfg[k]=v;if(k==='top'&&!['shirt','suit'].includes(cfg.top))cfg.tie=false;paintPrev();paintRows();try{const nb=rows.querySelector(`[data-k="${k}"][data-v="${CSS.escape(v)}"]`);if(nb)nb.focus({preventScroll:true})}catch(e){}});
     const fr=$('#av-freckles',rows);if(fr)fr.onchange=()=>{cfg.freckles=fr.checked;paintPrev()};
     const ti=$('#av-tie',rows);if(ti)ti.onchange=()=>{cfg.tie=ti.checked;paintPrev()};
   };
   paintPrev();paintRows();
   $('#av-close',mb).onclick=()=>mb.remove();
-  $('#av-rand',mb).onclick=()=>{cfg=Object.assign(avatarDefault(),avatarRandom(uid()));paintPrev();paintRows()};
+  $('#av-rand',mb).onclick=()=>{cfg=stripLocked(d,mid,Object.assign(avatarDefault(),avatarRandom(uid())));paintPrev();paintRows()};
   const ae=$('#av-emoji',mb);if(ae)ae.onclick=()=>{appendEvents([{type:'member.update',m:mid,by:SESSION,patch:{avatar:null}}]);mb.remove();toast('Vuelves a tu emoji '+m.emoji)};
-  $('#av-save',mb).onclick=()=>{appendEvents([{type:'member.update',m:mid,by:SESSION,patch:{avatar:sanitizeAvatar(cfg)}}]);mb.remove();toast('¡Avatar guardado! 🎨')};
+  $('#av-save',mb).onclick=()=>{appendEvents([{type:'member.update',m:mid,by:SESSION,patch:{avatar:sanitizeAvatar(stripLocked(d,mid,cfg))}}]);mb.remove();toast('¡Avatar guardado! 🎨')};
 }
 /* caras para el lienzo (rasterizadas desde el SVG, con caché) */
 const FACE_CACHE=new Map();
@@ -3415,7 +3475,7 @@ function postalModel(d,p){
   const nameOf=m=>(p.names&&m&&!(pub&&isMinor(d,m))&&!m.postalOptOut)?m.name:'';
   const M={kind:p.kind,brand:SHARE.brand,tag:SHARE.tag,title:(pub&&!p.names)?(solo?'Mi camino':'Nuestra familia'):String(fam.name||''),
     eyebrow:'',date:'',hero:'',sub:'',pride:'',proof:'',body:'',cats:[],members:[],sentence:String(p.sentence||'').slice(0,120),
-    dedic:String(p.dedic||'').slice(0,60),words:{},method:'',seal:null,tenure:'',author:'',authorEmoji:by?by.emoji:'',authorColor:by?by.color:'',authorAv:by?(by.avatar||null):null,
+    dedic:String(p.dedic||'').slice(0,60),words:{},method:'',seal:null,tenure:'',author:'',authorEmoji:by?by.emoji:'',authorColor:by?by.color:'',authorAv:by?avatarFor(d,by):null,
     code:(p.code&&p.audience==='publico'&&CONFIG.REFERRAL.live)?refCodeOf(fam):'',pct:CONFIG.REFERRAL.pct,consentNeeded:false,minorFramed:false};
   const minors=pub?[...d.members.values()].filter(x=>isMinor(d,x)&&x.name&&x.name.length>=3):[];
   const scrub=t=>{let o=String(t||'');for(const x of minors){o=o.split(x.emoji+' '+x.name).join(x.emoji);try{o=o.replace(new RegExp('(^|[^\\p{L}\\p{N}])'+x.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])','gu'),'$1'+x.emoji)}catch(e){}}return o};
@@ -3443,7 +3503,7 @@ function postalModel(d,p){
       else if(closed&&w.awards.corazon===m.id)line='💛 Corazón de la familia';
       else if(topc)line=CATS[topc[0]].e+' '+CATS[topc[0]].n;
       else if(done.length)line='🌱 Presente';
-      return {emoji:m.emoji,color:m.color,av:m.avatar||null,name:nameOf(m),line,done:done.length};
+      return {emoji:m.emoji,color:m.color,av:avatarFor(d,m),name:nameOf(m),line,done:done.length};
     });
     if(rows.some(r=>r.done===0))rows.forEach(r=>r.line='');
     M.members=rows;
@@ -3467,7 +3527,7 @@ function postalModel(d,p){
     M.proof=[`${weeks} ${weeks===1?'semana':'semanas'}`,acts?`${acts} ${acts===1?'actividad':'actividades'}`:'',sund?`${sund} ${sund===1?'domingo':'domingos'} de revisión`:''].filter(Boolean).join(' · ');
     if(framed){M.eyebrow='En casa celebramos';M.hero=`🏆 ${owner.emoji} cumplió su meta de ${cat.n.toLowerCase()}`;M.body='';M.author=''}
     else{M.eyebrow='Meta cumplida';M.hero=`🏆 ${g.f.objetivo||cat.n}`;M.body=(p.smartFull&&!minor)?String(g.f.smartFinal||''):'';
-      M.author=nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=owner.avatar||null;
+      M.author=nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=avatarFor(d,owner);
       if(!M.sentence&&g.f.identidad&&(!minor||p.audience==='cercana'))M.sentence=String(g.f.identidad).slice(0,120)}
     M.cats=[g.f.area];M.method=cat.e+' '+cat.n;
   }else if(p.kind==='racha'){
@@ -3476,7 +3536,7 @@ function postalModel(d,p){
     M.consentNeeded=minor;M.minorFramed=minor;M.date=fmtLong(d.todayK);
     M.eyebrow=minor?'En casa celebramos':'Racha';
     M.hero=minor?`${ms.e} ${owner.emoji} lleva ${days} días seguidos cumpliendo lo planificado`:`${ms.e} ${days} días seguidos cumpliendo lo planificado`;
-    M.sub='y contando';M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=owner.avatar||null;
+    M.sub='y contando';M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=avatarFor(d,owner);
     M.method='Cada día cuenta si cumplo algo planificado con antelación';
   }else if(p.kind==='insignia'){
     const b=BADGES.find(x=>x.id===p.badge),owner=d.members.get(p.m)||by;if(!b||!owner||owner.postalOptOut)return null;
@@ -3484,7 +3544,7 @@ function postalModel(d,p){
     M.consentNeeded=minor;M.minorFramed=minor;M.date=fmtLong(d.todayK);
     M.eyebrow=minor?'En casa celebramos':'Insignia · '+RARITY[b.r].n;
     M.hero=minor?`${b.e} ${owner.emoji} ganó la insignia ${b.n}`:`${b.e} ${b.n}`;M.sub=b.d;
-    M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=owner.avatar||null;
+    M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=avatarFor(d,owner);
   }else if(p.kind==='relato'){
     M.eyebrow='Nuestra historia';M.date=fmtLong(d.todayK);M.author=nameOf(by);
     M.hero='';M.method='Lo que de verdad nos pasó, en tres frases';
@@ -4523,6 +4583,28 @@ function runTests(){
     ok('T16 el avatar lleva fondo del color del miembro',/<circle cx="50" cy="50" r="50" fill="#[0-9A-F]{6}"/i.test(avatarHtml({avatar:a,color:'#33684B',emoji:'x',name:'x'},36))&&mixHex('#FBFCF8','#33684B',.18)==='#D7E1D9');
     ok('T16 todas las opciones tienen etiqueta en español',AV_KEYS.every(k=>AVATAR_OPTS[k].every(v=>avLabel(k,v)!==v||/^#/.test(v)===false&&false)||AVATAR_OPTS.hair.every(h=>AV_LABELS.hair[h])&&['skin','hairColor','topColor'].every(k=>AVATAR_OPTS[k].every(v=>!/^#/.test(avLabel(k,v))))));
     ok('T16 el modelo de la postal lleva la cara pero no datos personales',(()=>{const M=postalModel(d,{kind:'semana',wk:W0,audience:'publico',names:false,by:'M1'});return M.members.length===1&&M.members[0].av&&M.members[0].av.hair==='bun'&&!JSON.stringify(M).includes('"M1"')})());
+  }
+  // T17: desbloqueables del avatar — reglas y aplicación al dibujar
+  {
+    const day=addDays(W0,1);
+    const evs=[...base,
+      {id:'g1',t:ts(W0,8),type:'goal.create',gid:'G1',m:'M1',f:{area:'ejercicio',objetivo:'correr',estado:'En progreso'},actions:[]},
+      {id:'g1u',t:ts(day,12),type:'goal.update',gid:'G1',f:{estado:'Completado',progreso:100}},
+      {id:'av',t:ts(day,13),type:'member.update',m:'M1',by:'M1',patch:{avatar:{hat:'crown',glasses:'sun',top:'suit',hairColor:AVATAR_OPTS.hairColor[AVATAR_OPTS.hairColor.length-1]}}}];
+    const d=mkFam(evs),U=avatarUnlocks(d,'M1');
+    ok('T17 la primera meta desbloquea el traje y nada más',U.has('top:suit')&&U.size===1,[...U].join(','));
+    const eff=avatarFor(d,d.members.get('M1'));
+    ok('T17 lo bloqueado no se dibuja aunque venga en el evento',eff.top==='suit'&&eff.hat==='none'&&eff.glasses==='none'&&eff.hairColor!==AVATAR_OPTS.hairColor[AVATAR_OPTS.hairColor.length-1],JSON.stringify(eff));
+    ok('T17 el avatar guardado sigue intacto (solo se filtra al dibujar)',d.members.get('M1').avatar.hat==='crown');
+    const m=d.members.get('M1'),fake=(o)=>Object.assign({badges:new Set(),dayStreakMax:0,stats:{perfectWeeks:0}},o);
+    const rule=k=>AV_UNLOCKS.find(u=>u.key===k);
+    ok('T17 reglas: racha 30 → gafas de sol · impecable → pelo de color · rara → boina · legendaria → corona',
+      rule('glasses:sun').t(d,m,fake({dayStreakMax:30}))&&!rule('glasses:sun').t(d,m,fake({dayStreakMax:29}))
+      &&rule('hairColor:fun').t(d,m,fake({stats:{perfectWeeks:1}}))
+      &&rule('hat:beret').t(d,m,fake({badges:new Set(['montanabadge'])}))&&!rule('hat:beret').t(d,m,fake({badges:new Set(['primerpaso'])}))
+      &&rule('hat:crown').t(d,m,fake({badges:new Set(['kensho'])}))&&!rule('hat:crown').t(d,m,fake({badges:new Set(['montanabadge'])})));
+    const W1=addDays(W0,-7),sealed=evs.map(e=>(e.type==='family.create'||e.type==='member.join')?Object.assign({},e,{t:ts(W1,0)}):e);for(let i=0;i<4;i++)sealed.push({id:'sl'+i,t:ts(addDays(W1,7*i+6),19),type:'meeting.seal',week:addDays(W1,7*i),att:['M1']});
+    ok('T17 4 reuniones selladas → sombrero de paja',avatarUnlocks(mkFam(sealed),'M1').has('hat:straw')&&!avatarUnlocks(d,'M1').has('hat:straw'));
   }
   const passN=T.filter(t=>t.pass).length;
   $('#main').innerHTML=`<div class="vgap"><h1>Pruebas del motor · ${passN}/${T.length}</h1>
