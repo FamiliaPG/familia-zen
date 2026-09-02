@@ -1433,7 +1433,6 @@ function renderHoy(main,d){
       <div><div class="eyebrow">${fmtLong(today)}</div><h1 style="font-size:1.5rem">${greet}, ${esc(m.name)}</h1>${(()=>{const lc=lastClosedWeek(d),p=lc&&postalOf(d,'semana',lc),dow=new Date().getDay();return (p&&p.sentence&&(dow===1||dow===2))?`<div class="tiny" style="color:var(--verde-ink);margin-top:2px">«${esc(p.sentence)}»</div>`:''})()}</div>
       <div style="text-align:right"><div class="dnum" style="font-size:1.55rem;color:var(--kin)">${nfmt(mw?mw.pts:0)}</div><div class="tiny muted">pts esta semana</div></div>
     </div>
-    ${postalReadyHtml(d)}
     ${away?`<div class="banner info">🌱 ¡Bienvenido/a de vuelta! Tu próxima actividad vale <b>×2</b>. ¿Quieres aligerar la semana? <button class="btn small ghost" data-a="minweek">Reducir a versión mínima</button></div>`:''}
     ${(pm._frozeDay&&pm.dayStreak>0&&pm._frozeDay>=addDays(today,-2))?`<div class="banner">🪨 Una Piedra de Descanso protegió tu racha el ${fmtDate(pm._frozeDay)}. Sigue viva: ${pm.dayStreak} días.</div>`:''}
     <div class="card">
@@ -1472,6 +1471,7 @@ function renderHoy(main,d){
       </div>`
     :acts.map(a=>actCard(a,d)).join('')}
     ${famMini(d)}
+    ${postalReadyHtml(d)}
   </div>`;
   bindActCards(main,d);
   const q=(s,f)=>{const b=$(`[data-a=${s}]`,main);if(b)b.onclick=f};
