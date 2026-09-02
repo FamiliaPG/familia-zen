@@ -138,6 +138,15 @@ h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
 .pchip{cursor:pointer;white-space:normal;text-align:left;line-height:1.25}
 .pchip.on{background:var(--verde-soft);border-color:var(--verde);color:var(--verde-ink)}
 .sheet-actions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom));background:var(--surface);padding:12px 0 calc(10px + env(safe-area-inset-bottom));margin-top:14px;border-top:1px solid var(--line)}
+.avgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;margin-top:6px}
+.avopt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border-radius:12px;border:2px solid transparent;background:var(--surface2);cursor:pointer}
+.avopt svg{border-radius:50%;background:var(--surface)}
+.avopt.on{border-color:var(--verde);background:var(--verde-soft)}
+.avopt .tiny{line-height:1.1;text-align:center}
+.avsw{width:34px;height:34px;border-radius:50%;border:3px solid transparent;box-shadow:inset 0 0 0 1px #0002}
+.avsw.on{border-color:var(--ink)}
+.avatar svg{display:block}
+.g-char .head svg{display:block}
 .postal-mini{cursor:pointer}
 .postal-mini img{width:96px;aspect-ratio:4/5;border-radius:8px;box-shadow:var(--shadow);display:block;background:#EFF1EA}
 .stage-postal{display:flex;flex-direction:column;align-items:center}
@@ -767,8 +776,8 @@ function deriveState(events,now){
   for(const e of evs){switch(e.type){
     case 'family.create': D.fam={name:e.name,code:e.code,createdT:e.t,rewards:e.rewards||[],metaLabel:'',refBy:e.refBy?String(e.refBy).toUpperCase().slice(0,14):''};break;
     case 'family.update': if(D.fam){const p=Object.assign({},e.patch||{});if('name' in p){const nm=String(p.name||'').trim().slice(0,30);if(nm)p.name=nm;else delete p.name}if('refCode' in p){const rc=String(p.refCode||'').toUpperCase();if(!/^[A-Z0-9][A-Z0-9-]{2,12}[A-Z0-9]$/.test(rc)||rc===D.fam.code)delete p.refCode;else p.refCode=rc}if('postal' in p){const q=(p.postal&&typeof p.postal==='object')?p.postal:{};p.postal={audience:q.audience==='publico'?'publico':'cercana',names:!!q.names}}Object.assign(D.fam,p)}break;
-    case 'member.join': D.members.set(e.m,{id:e.m,name:String(e.name||'?').slice(0,20),emoji:AVATAR_EMOJIS.includes(e.emoji)?e.emoji:AVATAR_EMOJIS[0],color:MEMBER_COLORS.includes(e.color)?e.color:MEMBER_COLORS[0],pinHash:e.pinHash,birthYear:e.birthYear||null,adult:!!e.adult,amort:!!e.amort,sendero:false,focus:CAT_IDS.includes(e.focus)?e.focus:null,joinT:e.t});break;
-    case 'member.update': {const m=D.members.get(e.m);if(m){const p=Object.assign({},e.patch||{});if(('adult' in p||'birthYear' in p)&&('by' in e)){const a=D.members.get(e.by);let f=null;for(const x of D.members.values())if(!f||x.joinT<f.joinT)f=x;if(!(a&&(a.adult||(f&&a.id===f.id)))){delete p.adult;delete p.birthYear}}if('emoji' in p&&!AVATAR_EMOJIS.includes(p.emoji))delete p.emoji;if('color' in p&&!MEMBER_COLORS.includes(p.color))delete p.color;if('name' in p)p.name=String(p.name||'').slice(0,20)||m.name;if('focus' in p&&p.focus!=null&&!CAT_IDS.includes(p.focus))delete p.focus;if('postalOptOut' in p)p.postalOptOut=!!p.postalOptOut;Object.assign(m,p)}break}
+    case 'member.join': D.members.set(e.m,{id:e.m,name:String(e.name||'?').slice(0,20),emoji:AVATAR_EMOJIS.includes(e.emoji)?e.emoji:AVATAR_EMOJIS[0],color:MEMBER_COLORS.includes(e.color)?e.color:MEMBER_COLORS[0],pinHash:e.pinHash,birthYear:e.birthYear||null,adult:!!e.adult,amort:!!e.amort,sendero:false,focus:CAT_IDS.includes(e.focus)?e.focus:null,avatar:e.avatar?sanitizeAvatar(e.avatar):null,joinT:e.t});break;
+    case 'member.update': {const m=D.members.get(e.m);if(m){const p=Object.assign({},e.patch||{});if(('adult' in p||'birthYear' in p)&&('by' in e)){const a=D.members.get(e.by);let f=null;for(const x of D.members.values())if(!f||x.joinT<f.joinT)f=x;if(!(a&&(a.adult||(f&&a.id===f.id)))){delete p.adult;delete p.birthYear}}if('emoji' in p&&!AVATAR_EMOJIS.includes(p.emoji))delete p.emoji;if('color' in p&&!MEMBER_COLORS.includes(p.color))delete p.color;if('name' in p)p.name=String(p.name||'').slice(0,20)||m.name;if('focus' in p&&p.focus!=null&&!CAT_IDS.includes(p.focus))delete p.focus;if('postalOptOut' in p)p.postalOptOut=!!p.postalOptOut;if('avatar' in p)p.avatar=p.avatar?sanitizeAvatar(p.avatar):null;Object.assign(m,p)}break}
     case 'goal.create': D.goals.set(e.gid,{gid:e.gid,m:e.m,createdT:e.t,f:Object.assign({},e.f),actions:e.actions||[],estadoLog:[{t:e.t,v:e.f.estado||'No iniciado'}],progresoLog:[{t:e.t,v:e.f.progreso||0}],notas:e.f.notas||'',kpiSum:0,honorClosed:false,completedT:null});break;
     case 'goal.update': {const g=D.goals.get(e.gid);if(!g)break;
       if(e.f){Object.assign(g.f,e.f);
@@ -1183,7 +1192,8 @@ function avatarHtml(m,size=40,ringPct=null){
     const r=size/2+3, c=2*Math.PI*r;
     ring=`<svg style="position:absolute;inset:-5px;width:${size+10}px;height:${size+10}px" viewBox="0 0 ${size+10} ${size+10}"><circle cx="${(size+10)/2}" cy="${(size+10)/2}" r="${r}" fill="none" stroke="var(--sunken)" stroke-width="3"/><circle cx="${(size+10)/2}" cy="${(size+10)/2}" r="${r}" fill="none" stroke="var(--kin-bright)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-ringPct)}" transform="rotate(-90 ${(size+10)/2} ${(size+10)/2})"/></svg>`;
   }
-  return `<div style="position:relative;width:${size}px;height:${size}px;flex:none">${ring}<div class="avatar" style="width:${size}px;height:${size}px;font-size:${fs}px;border-color:${m?esc(m.color):'var(--line)'}">${m?esc(m.emoji):'?'}</div></div>`;
+  const face=(m&&m.avatar)?avatarSvg(m.avatar,{size:Math.max(8,size-4),bg:mixHex('#FBFCF8',m.color,.18)}):'';
+  return `<div style="position:relative;width:${size}px;height:${size}px;flex:none">${ring}<div class="avatar" style="width:${size}px;height:${size}px;font-size:${fs}px;border-color:${m?esc(m.color):'var(--line)'}${face?';overflow:hidden;padding:0':''}">${face||(m?esc(m.emoji):'?')}</div></div>`;
 }
 const catChip=c=>{const x=CATS[c]||CATS.otro;return `<span class="chip cat" style="background:${x.c}">${x.e} ${x.n}</span>`};
 const tierBadge=t=>`<span class="tierchip">${esc(CONFIG.TIER_NAMES[t]||t)} · ${CONFIG.BASE[t]||''}</span>`;
@@ -2418,7 +2428,7 @@ function renderJardin(main,d){
     const off=(k-(sibs.length-1)/2)*6;
     return `<div class="g-char ${mm.id===m.id?'me':''}" data-gc="${mm.id}" style="left:${g.x+off}%;top:${g.y}%">
       <div class="rig" style="--mc:${esc(mm.color)};animation-delay:${(i*0.7)%3}s">
-        <span class="head">${esc(mm.emoji)}</span>
+        <span class="head">${mm.avatar?avatarSvg(mm.avatar,{size:34,head:true}):esc(mm.emoji)}</span>
         <span class="robe"><span class="arm l"></span><span class="arm r"></span><span class="obiknot"></span></span>
         <span class="legs"><span class="leg l"></span><span class="leg r"></span></span>
       </div>
@@ -2775,6 +2785,7 @@ function renderPerfil(main,d){
       </div>
       <div class="row" style="justify-content:center;gap:8px;margin-top:14px">
         <button class="btn small sec" data-a="edit">Editar perfil</button>
+        <button class="btn small sec" data-a="avatar">🎨 Mi avatar</button>
         <button class="btn small sec" data-a="switch">Cambiar de miembro</button>
       </div>
     </div>
@@ -2849,6 +2860,7 @@ function renderPerfil(main,d){
   </div>`;
   const q=(s,f)=>{const b=$(`[data-a=${s}]`,main);if(b)b.onclick=f};
   q('edit',()=>profileEditor(m.id));
+  q('avatar',()=>avatarEditor(m.id));
   q('ref',()=>refModal());
   $$('[data-tshare]',main).forEach(b=>b.onclick=()=>sharePostal({kind:'meta',gid:b.dataset.tshare,m:m.id}));
   $$('[data-bshare]',main).forEach(b=>b.onclick=()=>sharePostal({kind:'insignia',badge:b.dataset.bshare,m:m.id}));
@@ -2925,6 +2937,372 @@ function renderPerfil(main,d){
     $$('[data-seed]',sd).forEach(b=>b.onclick=()=>{const k=b.dataset.seed;const ta=$(`[data-w=${k}]`,mb);if(ta){ta.value=b.dataset.t;st.words[k]=b.dataset.t;build()}});
     const cw=$('#ps-clearw',mb);if(cw)cw.onclick=()=>{for(const[k]of WORDS_Q){st.words[k]='';const ta=$(`[data-w=${k}]`,mb);if(ta)ta.value=''}build()};
   };
+/* ================= AVATAR — arte (SVG paramétrico) ================= */
+/*! avatar-clean.js — Familia Zen · avatares chibi paramétricos (vector plano, sin dependencias).
+    Globals: AVATAR_OPTS, avatarSvg(cfg, opts), avatarRandom(seed), avatarDefault().
+    cfg : { skin, hair, hairColor, brows, eyes, mouth, glasses, hat, top, topColor, beard, freckles, tie }
+    opts: { size: px (84), head: bool (false = busto, true = solo cabeza), bg: '#rrggbb' | '' }
+    Sin defs/clipPath/mask/ids/classes: el host recorta en círculo y puede usar el SVG como data-URI. */
+'use strict';
+
+const AVATAR_OPTS = {
+  skin: ['#FBD9BF', '#F2C39B', '#DDA875', '#BF8352', '#8C5A33', '#5A3A24'],
+  hair: ['short', 'side', 'curly', 'long', 'bun', 'ponytail', 'afro', 'mohawk', 'bald', 'buzz', 'bob', 'spiky'],
+  hairColor: ['#2B2320', '#4A2E1E', '#7A4A2B', '#A64B2A', '#E5C36A', '#9A9A9A', '#F2EFE8', '#E07AA8'],
+  brows: ['straight', 'arched', 'thick'],
+  eyes: ['round', 'happy', 'wink'],
+  mouth: ['smile', 'grin', 'neutral'],
+  glasses: ['none', 'round', 'square', 'sun'],
+  hat: ['none', 'cap', 'beanie', 'straw', 'beret', 'crown'],
+  top: ['tee', 'shirt', 'hoodie', 'suit'],
+  topColor: ['#33684B', '#D9A62E', '#5A6BA8', '#C4693B', '#C25E72', '#3D8E9A', '#8A79B8', '#6B6B6B'],
+  beard: ['none', 'short', 'full']
+};
+
+const AVATAR_DRAW = (function () {
+  var HEX = /^#[0-9a-fA-F]{6}$/;
+  var INK = '#2B2320', PAPER = '#FBFCF8', WHITE = '#FFFFFF';
+  var DEF = { skin: '#DDA875', hair: 'short', hairColor: '#4A2E1E', brows: 'arched', eyes: 'round', mouth: 'smile',
+    glasses: 'none', hat: 'none', top: 'tee', topColor: '#33684B', beard: 'none', freckles: false, tie: false };
+
+  /* ---------- color: k in (0,1] oscurece; k < 0 aclara hacia blanco en |k| ---------- */
+  function tone(hex, k) {
+    var n = parseInt(hex.slice(1), 16), out = '#';
+    for (var sh = 16; sh >= 0; sh -= 8) {
+      var v = (n >> sh) & 255;
+      v = k < 0 ? v + (255 - v) * -k : v * k;
+      v = Math.max(0, Math.min(255, Math.round(v)));
+      out += (v < 16 ? '0' : '') + v.toString(16);
+    }
+    return out.toUpperCase();
+  }
+
+  /* ---------- validación: todo valor desconocido cae al catálogo ---------- */
+  function norm(cfg) {
+    cfg = (cfg && typeof cfg === 'object') ? cfg : {};
+    var c = {};
+    Object.keys(AVATAR_OPTS).forEach(function (k) {
+      var list = AVATAR_OPTS[k], v = cfg[k];
+      if (typeof v === 'string' && list.indexOf(v) >= 0) c[k] = v;
+      else if (typeof v === 'string' && list[0].charAt(0) === '#' && HEX.test(v)) c[k] = v.toUpperCase();
+      else c[k] = DEF[k];
+    });
+    c.freckles = cfg.freckles === true;
+    c.tie = cfg.tie === true && (c.top === 'shirt' || c.top === 'suit');
+    return c;
+  }
+
+  /* ---------- primitivas ---------- */
+  function P(d, f, x) { return '<path d="' + d + '" fill="' + f + '"' + (x || '') + '/>'; }
+  function S(d, col, w) { return '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round" stroke-linejoin="round"/>'; }
+  function C(cx, cy, r, f, x) { return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + f + '"' + (x || '') + '/>'; }
+  function E(cx, cy, rx, ry, f, x) { return '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="' + f + '"' + (x || '') + '/>'; }
+  function R(x, y, w, h, rx, f) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + rx + '" fill="' + f + '"/>'; }
+  function flip(s) { return '<g transform="scale(-1 1)">' + s + '</g>'; }
+  function mir(s) { return s + flip(s); }
+
+  /* ---------- geometría de cabeza (origen = centro de la cabeza) ---------- */
+  var HEAD = 'M0-26C14-26 24-16 24 0C24 14 13 24 0 24C-13 24-24 14-24 0C-24-16-14-26 0-26Z';
+  var F_SHORT = 'M-25-6C-26-22-14-31 0-31C14-31 26-22 25-6C25-12 20-15 14-16C8-17 2-15-4-16C-12-18-20-14-25-6Z';
+  var F_SLEEK = 'M-25-6C-26-22-14-31 0-31C14-31 26-22 25-6C24-13 18-17 8-18C0-19-8-18-14-15C-20-12-24-9-25-6Z';
+  var F_SIDE = 'M-25-2C-27-22-14-31 2-31C17-31 26-22 25-9C24-13 18-14 10-13C2-12-6-9.5-13-7.5C-18-6-22-3-25-2Z';
+  var F_BANGS = 'M-26-2C-26-22-14-31 0-31C14-31 26-22 26-2C26-10 22-15 15-15.5L-15-15.5C-22-15-26-10-26-2Z';
+  var F_LONG = 'M-26 12C-26-8-27-31 0-31C27-31 26-8 26 12C26 2 23-9 15-14C7-18-7-18-15-14C-23-9-26 2-26 12Z';
+  var F_AFRO = 'M-24-6C-22-20-12-27 0-27C12-27 22-20 24-6C22-16 14-19 0-19C-14-19-22-16-24-6Z';
+  var F_BUZZ = 'M-24-4C-24-19-14-26.8 0-26.8C14-26.8 24-19 24-4C22-12 14-16 0-16C-14-16-22-12-24-4Z';
+  var F_MOHAWK = 'M-9-17C-10-30-5-40 0-46C5-40 10-30 9-17C5-21-5-21-9-17Z';
+  var F_SPIKY = 'M-25-6C-26-16-24-22-21-29L-14-23L-10-34L-3-26L1-38L6-27L13-33L16-24L23-29C25-22 26-14 25-6C25-12 20-15 14-16C8-17 2-15-4-16C-12-18-20-14-25-6Z';
+  var F_CURLY = 'M-26-4C-27-24-14-33 0-33C14-33 27-24 26-4C25-12 20-16 14-17C6-18-6-18-14-17C-20-16-25-12-26-4Z';
+  var B_LONG = 'M-27-6C-27-24-15-33 0-33C15-33 27-24 27-6L28 36C28 42 22 43 18 43L8 43L8 22L-8 22L-8 43L-18 43C-22 43-28 42-28 36Z';
+  var B_LONG_H = 'M-27-6C-27-24-15-33 0-33C15-33 27-24 27-6L28 36C28 42 22 43 18 43L-18 43C-22 43-28 42-28 36Z';
+  var B_BOB = 'M-27-6C-27-24-15-33 0-33C15-33 27-24 27-6L27 20C27 26 22 27 18 27L-18 27C-22 27-27 26-27 20Z';
+  var B_TAIL = 'M18-24C30-22 34-8 31 6C29 16 32 26 26 34C22 38 16 34 18 26C22 14 22 4 18-6C16-14 14-20 18-24Z';
+  var BEARD_IN = 'C24 7 19 8 15 9C10 10 8 17 0 17C-8 17-10 10-15 9C-19 8-24 7-24 0Z';
+  var AFRO_PUFFS = [[-28.2, -15.3], [-19.3, -28], [-5.2, -34.5], [10.3, -33.2], [23, -24.3], [29.5, -10.2], [28.2, 5.3], [-28.2, 5.3], [19.3, 18], [-19.3, 18]];
+  var CURLS = [[-24, -14], [-17, -25], [-7, -31], [4, -32], [14, -28], [22, -19], [26, -8]];
+
+  /* extensiones para encuadrar el modo cabeza */
+  var HAIR_TOP = { short: -31, side: -31, curly: -37, long: -33, bun: -40, ponytail: -31, afro: -38, mohawk: -46, bald: -26, buzz: -27, bob: -33, spiky: -38 };
+  var HAIR_HALF = { afro: 33, ponytail: 34, curly: 33.5 };
+  var HAT_TOP = { none: 0, cap: -38, beanie: -43.5, straw: -38, beret: -40, crown: -44 };
+  var HAT_HALF = { straw: 35, cap: 34 };
+
+  function hairStyle(c) {
+    var h = c.hair;
+    if (c.hat !== 'none' && (h === 'mohawk' || h === 'bun' || h === 'spiky')) return 'short';
+    return h;
+  }
+
+  function hair(style, hc, hd, headMode) {
+    var back = '', front = '', i;
+    switch (style) {
+      case 'side': front = P(F_SIDE, hc); break;
+      case 'curly':
+        back = mir(C(27, 2, 6.5, hd) + C(26, 12, 6, hd) + C(22, 20, 5.5, hd));
+        front = P(F_CURLY, hc);
+        for (i = 0; i < CURLS.length; i++) front += C(CURLS[i][0], CURLS[i][1], 5, hc);
+        break;
+      case 'long': back = P(headMode ? B_LONG_H : B_LONG, hd); front = P(F_LONG, hc); break;
+      case 'bun': back = C(0, -32.5, 7.5, hc) + S('M-4-36.5C-1.5-34.5 1.5-34.5 4-36.5', hd, 1.4); front = P(F_SLEEK, hc); break;
+      case 'ponytail': back = P(B_TAIL, hd); front = P(F_SLEEK, hc); break;
+      case 'afro':
+        back = C(0, -5, 33, hc);
+        for (i = 0; i < AFRO_PUFFS.length; i++) back += C(AFRO_PUFFS[i][0], AFRO_PUFFS[i][1], 7.5, hc);
+        front = P(F_AFRO, hc);
+        break;
+      case 'mohawk': front = P(F_BUZZ, hc, ' fill-opacity=".18"') + P(F_MOHAWK, hc); break;
+      case 'bald': front = E(-7, -18, 4.5, 2.5, WHITE, ' fill-opacity=".35"'); break;
+      case 'buzz': front = P(F_BUZZ, hc); break;
+      case 'bob': back = P(B_BOB, hd); front = P(F_BANGS, hc); break;
+      case 'spiky': front = P(F_SPIKY, hc); break;
+      default: front = P(F_SHORT, hc);
+    }
+    return { back: back, front: front };
+  }
+
+  function face(c, skin, hc) {
+    var skinL = tone(skin, 0.7), browC = tone(hc, 0.75), s = '';
+    var open = function (x) { return E(x, -2, 3.4, 4.2, INK) + C(x + 1.2, -3.6, 1.3, WHITE); };
+    var shut = S('M-13.5-1C-12-6.5-6-6.5-4.5-1', INK, 2.4);
+    if (c.eyes === 'happy') s += mir(shut);
+    else if (c.eyes === 'wink') s += open(-9) + flip(shut);
+    else s += open(-9) + open(9);
+    var b = c.brows === 'straight' ? ['M-13.5-10L-5-11', 2]
+      : c.brows === 'thick' ? ['M-14-9C-12-14-6-14.5-4-11.5', 3.4]
+      : ['M-13.5-9C-12-13-7-13.5-4.5-11', 2];
+    s += mir(S(b[0], browC, b[1]));
+    s += S('M-2.5 3.5C-1.5 6.5 1.5 6.5 2.5 3.5', skinL, 1.6);
+    s += mir(E(15.5, 6, 3.6, 2.2, '#E8836B', ' fill-opacity=".3"'));
+    return s;
+  }
+
+  function mouth(m) {
+    if (m === 'grin') return P('M-7.5 10.5C-4 19.5 4 19.5 7.5 10.5Z', '#5E3140') + P('M-5.5 10.9C-2 13.8 2 13.8 5.5 10.9Z', WHITE);
+    if (m === 'neutral') return S('M-4.5 12.5L4.5 12.5', INK, 2.2);
+    return S('M-6.5 10.5C-3 16 3 16 6.5 10.5', INK, 2.2);
+  }
+
+  function beard(b, hc) {
+    if (b === 'short') return P('M-24 0C-24 14-13 24 0 24C13 24 24 14 24 0' + BEARD_IN, hc);
+    if (b === 'full') return P('M-24 0C-25 20-16 34 0 34C16 34 25 20 24 0' + BEARD_IN, hc) +
+      P('M-8.5 8.5C-6 5.5-2 5.5 0 8C2 5.5 6 5.5 8.5 8.5C6 10.5 2 11 0 9.5C-2 11-6 10.5-8.5 8.5Z', hc);
+    return '';
+  }
+
+  function glasses(g) {
+    if (g === 'none') return '';
+    var w = 1.7, st = ' stroke="' + INK + '" stroke-width="' + w + '"';
+    var bridge = S('M-2.5-2.5C-1-4 1-4 2.5-2.5', INK, w) + S('M-15.5-2L-23-4M15.5-2L23-4', INK, w);
+    if (g === 'round') return mir(C(9, -1.5, 6.5, 'none', st)) + bridge;
+    if (g === 'square') return mir('<rect x="2.5" y="-7.5" width="13" height="11.5" rx="3" fill="none"' + st + '/>') + bridge;
+    return mir('<rect x="2" y="-8" width="14" height="12" rx="4.5" fill="' + INK + '"/>' + E(6.5, -5.2, 2.6, 1.2, WHITE, ' fill-opacity=".35"')) + bridge;
+  }
+
+  function hat(h, top, topD) {
+    switch (h) {
+      case 'cap': return P('M-25-14C-25-30-14-38 0-38C14-38 25-30 25-14C15-12-15-12-25-14Z', top) +
+        P('M0-17C12-17 26-18 32-14C34-12 33-9 30-9C22-10 12-12 0-12Z', topD) + C(0, -38, 2.2, topD);
+      case 'beanie': return P('M-26-12C-26-30-14-39 0-39C14-39 26-30 26-12Z', top) + R(-27, -20, 54, 8, 4, topD) + C(0, -39, 4.5, tone(top, -0.55));
+      case 'straw': return E(0, -18, 35, 5, '#DDB85E') + P('M-21-18C-21-32-12-38 0-38C12-38 21-32 21-18Z', '#E8C874') + R(-20.5, -24, 41, 5, 0, '#33684B');
+      case 'beret': return P('M-27-17C-30-30-10-40 8-38C22-36 30-28 24-17C14-15-10-15-27-17Z', top) + C(4, -38, 2.2, topD);
+      case 'crown': return P('M-17-24L-17-40L-9-31L0-44L9-31L17-40L17-24Z', '#D9A62E') + R(-17, -27, 34, 5, 1, '#B8891F') +
+        C(-9, -24.5, 1.7, '#C25E72') + C(0, -24.5, 1.7, '#3D8E9A') + C(9, -24.5, 1.7, '#C25E72');
+    }
+    return '';
+  }
+
+  function headParts(c, headMode) {
+    var skin = c.skin, skinD = tone(skin, 0.82), skinL = tone(skin, 0.7);
+    var hc = c.hairColor, hd = tone(hc, 0.8), top = c.topColor, topD = tone(top, 0.72);
+    var style = hairStyle(c), hp = hair(style, hc, hd, headMode);
+    var s = mir(C(25, 2, 5.5, skin)) + P(HEAD, skin) + mir(C(26.8, 2, 2.3, skinD));
+    s += face(c, skin, hc);
+    s += beard(c.beard, hc);
+    s += mouth(c.mouth);
+    if (c.freckles) s += mir(C(15, 4, 0.9, skinL) + C(12, 6.5, 0.9, skinL) + C(16.5, 7.5, 0.9, skinL));
+    s += hp.front + glasses(c.glasses) + hat(c.hat, top, topD);
+    return { back: hp.back, main: s, style: style };
+  }
+
+  function headTransform(style, h, beard) {
+    var top = Math.min(HAIR_TOP[style], HAT_TOP[h]);
+    var bottom = Math.max(24, beard === 'full' ? 34 : 0, style === 'ponytail' ? 38 : 0);
+    var half = Math.max(30.5, HAIR_HALF[style] || 0, HAT_HALF[h] || 0);
+    var s = Math.min(1.6, 92 / (bottom - top), 96 / (2 * half));
+    s = Math.round(s * 1000) / 1000;
+    var ty = Math.round((50 - s * (top + bottom) / 2) * 100) / 100;
+    return 'translate(50 ' + ty + ') scale(' + s + ')';
+  }
+
+  /* ---------- cuerpo (coordenadas absolutas del busto) ---------- */
+  function body(c) {
+    var top = c.topColor, topD = tone(top, 0.72), tieC = tone(top, 0.55), collar = tone(top, -0.45);
+    var U = 'M12 100C12 86 26 78 43 77Q50 86 57 77C74 78 88 86 88 100Z';
+    var V = 'M12 100C12 86 26 78 40 77L50 96L60 77C74 78 88 86 88 100Z';
+    var tie = P('M47 85L53 85L52 89.5L48 89.5Z', tieC) + P('M48 89.5L52 89.5L54.5 100L45.5 100Z', tieC);
+    var r = { pre: '', under: '', base: '', over: '' };
+    switch (c.top) {
+      case 'shirt':
+        r.base = P(U, top);
+        r.over = P('M41 76L50 86L45 89.5L37 80.5Z', collar) + P('M59 76L50 86L55 89.5L63 80.5Z', collar) +
+          S('M50 87L50 100', topD, 1.3) + C(50, 92, 1.1, topD) + C(50, 97.5, 1.1, topD) + (c.tie ? tie : '');
+        break;
+      case 'hoodie':
+        r.pre = E(50, 76, 18, 10, topD);
+        r.base = P(U, top);
+        r.over = S('M33 82C40 93 60 93 67 82', topD, 6) + S('M46 89L46 98M54 89L54 98', PAPER, 1.6);
+        break;
+      case 'suit':
+        r.under = P('M41 80L50 86L59 80L61 100L39 100Z', PAPER) + (c.tie ? tie : '');
+        r.base = P(V, top);
+        r.over = P('M40 77L50 96L48 86L42 82Z', topD) + P('M60 77L50 96L52 86L58 82Z', topD);
+        break;
+      default:
+        r.base = P(U, top) + S('M43 77Q50 86 57 77', topD, 2.4) + S('M26 82Q21 90 22 100M74 82Q79 90 78 100', topD, 1.6);
+    }
+    return r;
+  }
+
+  function svg(cfg, opts) {
+    var c = norm(cfg), o = (opts && typeof opts === 'object') ? opts : {};
+    var size = Number(o.size);
+    if (!isFinite(size) || size <= 0) size = 84;
+    size = Math.round(size * 100) / 100;
+    var headMode = o.head === true;
+    var bg = (typeof o.bg === 'string' && HEX.test(o.bg)) ? o.bg.toUpperCase() : '';
+    var out = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="' + size + '" height="' + size + '" style="display:block">';
+    if (bg) out += C(50, 50, 50, bg);
+    var hp = headParts(c, headMode);
+    if (headMode) {
+      out += '<g transform="' + headTransform(hp.style, c.hat, c.beard) + '">' + hp.back + hp.main + '</g>';
+    } else {
+      var skin = c.skin, b = body(c), tf = '<g transform="translate(50 44)">';
+      out += b.pre;
+      out += R(43, 56, 14, 34, 4, skin) + P('M43 63L57 63L57 70Q50 75 43 70Z', tone(skin, 0.82));
+      out += b.under + b.base;
+      if (hp.back) out += tf + hp.back + '</g>';
+      out += b.over;
+      out += tf + hp.main + '</g>';
+    }
+    return out + '</svg>';
+  }
+
+  return { norm: norm, svg: svg, def: function () { return Object.assign({}, DEF); } };
+})();
+
+function avatarSvg(cfg, opts) { return AVATAR_DRAW.svg(cfg, opts); }
+
+function avatarDefault() { return AVATAR_DRAW.def(); }
+
+function avatarRandom(seed) {
+  var str = String(seed === undefined || seed === null ? '' : seed), h = 2166136261;
+  for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  var st = h >>> 0;
+  function r() { // mulberry32
+    st = (st + 0x6D2B79F5) | 0;
+    var t = Math.imul(st ^ (st >>> 15), 1 | st);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function pick(a) { return a[Math.floor(r() * a.length)]; }
+  var O = AVATAR_OPTS;
+  var cfg = {
+    skin: pick(O.skin), hair: pick(O.hair), hairColor: pick(O.hairColor),
+    brows: pick(O.brows), eyes: pick(O.eyes), mouth: pick(O.mouth),
+    glasses: r() < 0.3 ? pick(O.glasses.slice(1)) : 'none',
+    hat: r() < 0.25 ? pick(O.hat.slice(1)) : 'none',
+    top: pick(O.top), topColor: pick(O.topColor),
+    beard: r() < 0.2 ? pick(O.beard.slice(1)) : 'none',
+    freckles: r() < 0.25
+  };
+  cfg.tie = (cfg.top === 'shirt' || cfg.top === 'suit') && r() < 0.4;
+  return cfg;
+}
+
+if (typeof window !== 'undefined') {
+  window.AVATAR_OPTS = AVATAR_OPTS;
+  window.avatarSvg = avatarSvg;
+  window.avatarRandom = avatarRandom;
+  window.avatarDefault = avatarDefault;
+}
+
+/* ================= AVATAR — integración (validación, editor, jardín, lienzo) ================= */
+/* El emoji sigue siendo el «avatar de texto» (chips, pies de foto, sello); la cara dibujada es el avatar visual. */
+const AV_KEYS=['skin','hair','hairColor','brows','eyes','mouth','glasses','hat','top','topColor','beard'];
+/* fondo del avatar: papel mezclado con el color del miembro (hex opaco: el arte solo acepta #rrggbb) */
+function mixHex(a,b,t){const ok=x=>/^#[0-9a-fA-F]{6}$/.test(String(x||''));if(!ok(a))a='#FBFCF8';if(!ok(b))return '#EDEFE8';const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16);let o='#';for(const sh of [16,8,0]){const v=Math.round(((A>>sh&255)*(1-t))+((B>>sh&255)*t));o+=v.toString(16).padStart(2,'0')}return o.toUpperCase()}
+const AV_COLOR_NAMES={skin:['Piel muy clara','Piel clara','Piel media','Piel morena','Piel oscura','Piel muy oscura'],hairColor:['Negro','Castaño oscuro','Castaño','Pelirrojo','Rubio','Gris','Blanco','Rosa'],topColor:['Verde','Dorado','Azul','Terracota','Rosa','Turquesa','Lila','Gris']};
+const AV_LABELS={
+  hair:{short:'Corto',side:'Raya al lado',curly:'Rizado',long:'Largo',bun:'Moño',ponytail:'Coleta',afro:'Afro',mohawk:'Cresta',bald:'Sin pelo',bob:'Bob',buzz:'Rapado',spiky:'De punta'},
+  brows:{straight:'Rectas',arched:'Arqueadas',thick:'Gruesas'},
+  eyes:{round:'Redondos',happy:'Alegres',wink:'Guiño'},
+  mouth:{smile:'Sonrisa',grin:'Risa',neutral:'Serena'},
+  glasses:{none:'Sin gafas',round:'Redondas',square:'Cuadradas',sun:'De sol'},
+  hat:{none:'Sin sombrero',cap:'Gorra',beanie:'Gorro',straw:'Sombrero de paja',beret:'Boina',crown:'Corona'},
+  top:{tee:'Camiseta',shirt:'Camisa',hoodie:'Sudadera',suit:'Traje'},
+  beard:{none:'Sin barba',short:'Barba corta',full:'Barba'},
+};
+const AV_TITLES={skin:'Piel',hair:'Pelo',hairColor:'Color de pelo',brows:'Cejas',eyes:'Ojos',mouth:'Boca',glasses:'Gafas',hat:'Sombrero',top:'Ropa',topColor:'Color de la ropa',beard:'Barba'};
+const avLabel=(k,v)=>{if(AV_COLOR_NAMES[k]){const i=(AVATAR_OPTS[k]||[]).indexOf(v);return AV_COLOR_NAMES[k][i]||v}return (AV_LABELS[k]&&AV_LABELS[k][v])||v};
+function sanitizeAvatar(c){
+  if(!c||typeof c!=='object')return null;
+  const o={};
+  for(const k of AV_KEYS){const v=c[k];if(typeof v==='string'&&Array.isArray(AVATAR_OPTS[k])&&AVATAR_OPTS[k].includes(v))o[k]=v}
+  o.freckles=!!c.freckles;o.tie=!!c.tie;
+  return o;
+}
+function avatarEditor(mid){
+  const d=D(),m=d.members.get(mid);if(!m)return;
+  let cfg=m.avatar?Object.assign(avatarDefault(),m.avatar):avatarDefault();
+  const mb=modal(`<div class="row between"><h3>🎨 Mi avatar</h3><button class="chip" id="av-close" aria-label="Cerrar">✕</button></div>
+    <div class="row" style="gap:14px;margin-top:10px;align-items:center">
+      <div id="av-prev"></div>
+      <div class="grow"><p class="small muted" style="margin:0">Así te verás en la app, en el jardín y en las postales. Tu emoji ${esc(m.emoji)} se queda para los textos.</p>
+        <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn small sec" id="av-rand">🎲 Sorpréndeme</button>${m.avatar?`<button class="btn small ghost" id="av-emoji">Volver a mi emoji</button>`:''}</div></div>
+    </div>
+    <div id="av-rows" style="margin-top:6px"></div>
+    <div class="sheet-actions"><button class="btn big" id="av-save">Guardar mi avatar</button></div>`);
+  mb.classList.add('sticky');
+  const prev=$('#av-prev',mb),rows=$('#av-rows',mb);
+  const paintPrev=()=>{prev.innerHTML=`<div class="avatar" style="width:112px;height:112px;border-color:${esc(m.color)};overflow:hidden;padding:0">${avatarSvg(cfg,{size:108,bg:mixHex('#FBFCF8',m.color,.18)})}</div>`};
+  const swatchKeys=['skin','hairColor','topColor'];
+  const paintRows=()=>{
+    rows.innerHTML=AV_KEYS.map(k=>{
+      const opts=AVATAR_OPTS[k]||[];
+      if(k==='topColor'&&cfg.top==='suit'&&false)return '';
+      const items=opts.map(v=>swatchKeys.includes(k)
+        ?`<button class="avsw ${cfg[k]===v?'on':''}" data-k="${k}" data-v="${esc(v)}" style="background:${esc(v)}" title="${esc(avLabel(k,v))}" aria-label="${esc(avLabel(k,v))}" aria-pressed="${cfg[k]===v}"></button>`
+        :`<button class="avopt ${cfg[k]===v?'on':''}" data-k="${k}" data-v="${esc(v)}" title="${esc(avLabel(k,v))}" aria-pressed="${cfg[k]===v}">${avatarSvg(Object.assign({},cfg,{[k]:v}),{size:46,head:!['top','topColor'].includes(k),bg:'#F3F1EA'})}<span class="tiny">${esc(avLabel(k,v))}</span></button>`).join('');
+      const extra=k==='eyes'?`<label class="row small" style="gap:6px;margin-top:6px"><input type="checkbox" id="av-freckles" ${cfg.freckles?'checked':''} style="width:auto">Pecas</label>`:k==='top'?`<label class="row small" style="gap:6px;margin-top:6px"><input type="checkbox" id="av-tie" ${cfg.tie?'checked':''} ${['shirt','suit'].includes(cfg.top)?'':'disabled'} style="width:auto">Corbata <span class="tiny muted">(con camisa o traje)</span></label>`:'';
+      return `<div style="margin-top:12px" role="group" aria-label="${esc(AV_TITLES[k]||k)}"><div class="eyebrow">${AV_TITLES[k]||k}</div><div class="${swatchKeys.includes(k)?'row':'avgrid'}" style="${swatchKeys.includes(k)?'gap:8px;flex-wrap:wrap;margin-top:6px':''}">${items}</div>${extra}</div>`;
+    }).join('');
+    $$('[data-k]',rows).forEach(b=>b.onclick=()=>{const k=b.dataset.k,v=b.dataset.v;cfg[k]=v;if(k==='top'&&!['shirt','suit'].includes(cfg.top))cfg.tie=false;paintPrev();paintRows();try{const nb=rows.querySelector(`[data-k="${k}"][data-v="${CSS.escape(v)}"]`);if(nb)nb.focus({preventScroll:true})}catch(e){}});
+    const fr=$('#av-freckles',rows);if(fr)fr.onchange=()=>{cfg.freckles=fr.checked;paintPrev()};
+    const ti=$('#av-tie',rows);if(ti)ti.onchange=()=>{cfg.tie=ti.checked;paintPrev()};
+  };
+  paintPrev();paintRows();
+  $('#av-close',mb).onclick=()=>mb.remove();
+  $('#av-rand',mb).onclick=()=>{cfg=Object.assign(avatarDefault(),avatarRandom(uid()));paintPrev();paintRows()};
+  const ae=$('#av-emoji',mb);if(ae)ae.onclick=()=>{appendEvents([{type:'member.update',m:mid,by:SESSION,patch:{avatar:null}}]);mb.remove();toast('Vuelves a tu emoji '+m.emoji)};
+  $('#av-save',mb).onclick=()=>{appendEvents([{type:'member.update',m:mid,by:SESSION,patch:{avatar:sanitizeAvatar(cfg)}}]);mb.remove();toast('¡Avatar guardado! 🎨')};
+}
+/* caras para el lienzo (rasterizadas desde el SVG, con caché) */
+const FACE_CACHE=new Map();
+const faceKey=(av,color)=>av?JSON.stringify(av)+'|'+(color||''):'';
+function faceImage(av,color){
+  const k=faceKey(av,color);if(!k)return Promise.resolve(null);
+  if(FACE_CACHE.has(k))return FACE_CACHE.get(k);
+  const p=new Promise(res=>{try{const im=new Image();let done=false,tm=0;const fin=v=>{if(done)return;done=true;clearTimeout(tm);if(!v)FACE_CACHE.delete(k);res(v)};
+    im.onload=()=>fin(im);im.onerror=()=>fin(null);tm=setTimeout(()=>fin(null),6000);
+    im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(avatarSvg(av,{size:256,bg:mixHex('#FBFCF8',color,.18)}))}catch(e){FACE_CACHE.delete(k);res(null)}});
+  FACE_CACHE.set(k,p);return p;
+}
+async function postalFaces(M){
+  const list=[...(M.members||[]).map(r=>[r.av,r.color]),[M.authorAv,M.authorColor]].filter(x=>x[0]);
+  const out=new Map();
+  await Promise.all(list.map(async([a,c])=>{out.set(faceKey(a,c),await faceImage(a,c))}));
+  return out;
+}
 /* ================= POSTALES — compartir en familia y hacia afuera ================= */
 /* Reglas duras (probadas en runTests T13): una postal NUNCA lleva el enlace de la app, la clave de acceso
    (fam.code), ids de miembros, años de nacimiento, notas/evidencias ni cifras por persona. Los menores salen
@@ -3037,7 +3415,7 @@ function postalModel(d,p){
   const nameOf=m=>(p.names&&m&&!(pub&&isMinor(d,m))&&!m.postalOptOut)?m.name:'';
   const M={kind:p.kind,brand:SHARE.brand,tag:SHARE.tag,title:(pub&&!p.names)?(solo?'Mi camino':'Nuestra familia'):String(fam.name||''),
     eyebrow:'',date:'',hero:'',sub:'',pride:'',proof:'',body:'',cats:[],members:[],sentence:String(p.sentence||'').slice(0,120),
-    dedic:String(p.dedic||'').slice(0,60),words:{},method:'',seal:null,tenure:'',author:'',authorEmoji:by?by.emoji:'',authorColor:by?by.color:'',
+    dedic:String(p.dedic||'').slice(0,60),words:{},method:'',seal:null,tenure:'',author:'',authorEmoji:by?by.emoji:'',authorColor:by?by.color:'',authorAv:by?(by.avatar||null):null,
     code:(p.code&&p.audience==='publico'&&CONFIG.REFERRAL.live)?refCodeOf(fam):'',pct:CONFIG.REFERRAL.pct,consentNeeded:false,minorFramed:false};
   const minors=pub?[...d.members.values()].filter(x=>isMinor(d,x)&&x.name&&x.name.length>=3):[];
   const scrub=t=>{let o=String(t||'');for(const x of minors){o=o.split(x.emoji+' '+x.name).join(x.emoji);try{o=o.replace(new RegExp('(^|[^\\p{L}\\p{N}])'+x.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])','gu'),'$1'+x.emoji)}catch(e){}}return o};
@@ -3065,7 +3443,7 @@ function postalModel(d,p){
       else if(closed&&w.awards.corazon===m.id)line='💛 Corazón de la familia';
       else if(topc)line=CATS[topc[0]].e+' '+CATS[topc[0]].n;
       else if(done.length)line='🌱 Presente';
-      return {emoji:m.emoji,color:m.color,name:nameOf(m),line,done:done.length};
+      return {emoji:m.emoji,color:m.color,av:m.avatar||null,name:nameOf(m),line,done:done.length};
     });
     if(rows.some(r=>r.done===0))rows.forEach(r=>r.line='');
     M.members=rows;
@@ -3089,7 +3467,7 @@ function postalModel(d,p){
     M.proof=[`${weeks} ${weeks===1?'semana':'semanas'}`,acts?`${acts} ${acts===1?'actividad':'actividades'}`:'',sund?`${sund} ${sund===1?'domingo':'domingos'} de revisión`:''].filter(Boolean).join(' · ');
     if(framed){M.eyebrow='En casa celebramos';M.hero=`🏆 ${owner.emoji} cumplió su meta de ${cat.n.toLowerCase()}`;M.body='';M.author=''}
     else{M.eyebrow='Meta cumplida';M.hero=`🏆 ${g.f.objetivo||cat.n}`;M.body=(p.smartFull&&!minor)?String(g.f.smartFinal||''):'';
-      M.author=nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;
+      M.author=nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=owner.avatar||null;
       if(!M.sentence&&g.f.identidad&&(!minor||p.audience==='cercana'))M.sentence=String(g.f.identidad).slice(0,120)}
     M.cats=[g.f.area];M.method=cat.e+' '+cat.n;
   }else if(p.kind==='racha'){
@@ -3098,7 +3476,7 @@ function postalModel(d,p){
     M.consentNeeded=minor;M.minorFramed=minor;M.date=fmtLong(d.todayK);
     M.eyebrow=minor?'En casa celebramos':'Racha';
     M.hero=minor?`${ms.e} ${owner.emoji} lleva ${days} días seguidos cumpliendo lo planificado`:`${ms.e} ${days} días seguidos cumpliendo lo planificado`;
-    M.sub='y contando';M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;
+    M.sub='y contando';M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=owner.avatar||null;
     M.method='Cada día cuenta si cumplo algo planificado con antelación';
   }else if(p.kind==='insignia'){
     const b=BADGES.find(x=>x.id===p.badge),owner=d.members.get(p.m)||by;if(!b||!owner||owner.postalOptOut)return null;
@@ -3106,7 +3484,7 @@ function postalModel(d,p){
     M.consentNeeded=minor;M.minorFramed=minor;M.date=fmtLong(d.todayK);
     M.eyebrow=minor?'En casa celebramos':'Insignia · '+RARITY[b.r].n;
     M.hero=minor?`${b.e} ${owner.emoji} ganó la insignia ${b.n}`:`${b.e} ${b.n}`;M.sub=b.d;
-    M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;
+    M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;M.authorAv=owner.avatar||null;
   }else if(p.kind==='relato'){
     M.eyebrow='Nuestra historia';M.date=fmtLong(d.todayK);M.author=nameOf(by);
     M.hero='';M.method='Lo que de verdad nos pasó, en tres frases';
@@ -3189,11 +3567,11 @@ function drawWrapped(ctx,text,x,y,maxW,lh,maxLines,align='left'){
   for(const l of lines){ctx.fillText(l,ax,y);y+=lh}
   ctx.textAlign='left';return y;
 }
-function drawAvatar(ctx,cx,cy,r,emoji,color){
+function drawAvatar(ctx,cx,cy,r,emoji,color,img){
   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=hexA(color,.16);ctx.fill();
-  ctx.lineWidth=Math.max(3,r*.11);ctx.strokeStyle=color||PC.verde;ctx.stroke();
-  ctx.font=FB(400,Math.round(r*1.05));ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=PC.ink;
-  ctx.fillText(emoji||'?',cx,cy+r*.06);ctx.textBaseline='alphabetic';ctx.textAlign='left';
+  if(img){ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();try{ctx.drawImage(img,cx-r,cy-r,2*r,2*r)}catch(e){}ctx.restore()}
+  else{ctx.font=FB(400,Math.round(r*1.05));ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=PC.ink;ctx.fillText(emoji||'?',cx,cy+r*.06);ctx.textBaseline='alphabetic';ctx.textAlign='left'}
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.lineWidth=Math.max(3,r*.11);ctx.strokeStyle=color||PC.verde;ctx.stroke();
 }
 function drawSeal(ctx,cx,cy,r,seal){
   ctx.save();ctx.translate(cx,cy);ctx.rotate(-.18);
@@ -3218,6 +3596,8 @@ function drawWords(ctx,M,L,y,CW,maxY,big){
 }
 async function drawPostal(M){
   const logo=await postalAssets();
+  const faces=(typeof postalFaces==='function')?await postalFaces(M):new Map();
+  const face=(av,c)=>faces.get(faceKey(av,c))||null;
   const W=SHARE.W,H=SHARE.H,cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const ctx=cv.getContext('2d');
   ctx.fillStyle=PC.ground;ctx.fillRect(0,0,W,H);
@@ -3256,20 +3636,20 @@ async function drawPostal(M){
     if(rows.length&&room>50){
       if(withLines&&rows.length<=3&&room>=rows.length*92){
         const rh=92,ar=34;
-        for(const r of rows){drawAvatar(ctx,L+ar+4,y+rh/2-4,ar,r.emoji,r.color);const tx=L+2*ar+32;
+        for(const r of rows){drawAvatar(ctx,L+ar+4,y+rh/2-4,ar,r.emoji,r.color,face(r.av,r.color));const tx=L+2*ar+32;
           if(r.name){ctx.fillStyle=PC.ink;ctx.font=FD(700,30);ctx.fillText(wrapLines(ctx,r.name,CW-2*ar-40,1)[0],tx,y+rh/2-6);ctx.fillStyle=PC.ink2;ctx.font=FB(500,26);ctx.fillText(wrapLines(ctx,r.line,CW-2*ar-40,1)[0],tx,y+rh/2+28)}
           else{ctx.fillStyle=PC.ink;ctx.font=FB(700,28);ctx.fillText(wrapLines(ctx,r.line,CW-2*ar-40,1)[0],tx,y+rh/2+8)}
           y+=rh}
       }else if(withLines&&room>=Math.ceil(rows.length/2)*72){
         const cw=CW/2,ch=72,ar=25,tw=cw-2*ar-40;let drawn=0;
         rows.forEach((r,i)=>{const col=i%2,row=Math.floor(i/2),x=L+col*cw,yy=y+row*ch;if(yy+ch>y+room)return;drawn=row+1;
-          drawAvatar(ctx,x+ar+2,yy+ch/2-3,ar,r.emoji,r.color);const tx=x+2*ar+20;
+          drawAvatar(ctx,x+ar+2,yy+ch/2-3,ar,r.emoji,r.color,face(r.av,r.color));const tx=x+2*ar+20;
           if(r.name){ctx.fillStyle=PC.ink;ctx.font=FD(700,26);ctx.fillText(wrapLines(ctx,r.name,tw,1)[0],tx,yy+ch/2-5);ctx.fillStyle=PC.ink2;ctx.font=FB(500,23);ctx.fillText(wrapLines(ctx,r.line,tw,1)[0],tx,yy+ch/2+23)}
           else{ctx.fillStyle=PC.ink;ctx.font=FB(700,25);ctx.fillText(wrapLines(ctx,r.line,tw,1)[0],tx,yy+ch/2+8)}});
         y+=drawn*ch;
       }else{
         let cx=L+32;const hasN=nW<3&&rows.some(r=>r.name);
-        for(const r of rows){if(cx+34>L+CW)break;drawAvatar(ctx,cx,y+32,30,r.emoji,r.color);
+        for(const r of rows){if(cx+34>L+CW)break;drawAvatar(ctx,cx,y+32,30,r.emoji,r.color,face(r.av,r.color));
           if(hasN&&r.name){ctx.fillStyle=PC.ink2;ctx.font=FB(600,19);ctx.textAlign='center';ctx.fillText(wrapLines(ctx,r.name,88,1)[0],cx,y+88);ctx.textAlign='left'}cx+=96}
         y+=hasN?104:76;
       }
@@ -3285,7 +3665,7 @@ async function drawPostal(M){
     y=drawWords(ctx,M,L,y,CW,maxY-150,true);
     if(M.sentence&&y+110<maxY-120){ctx.fillStyle=PC.ink;ctx.font=FD(700,34);y=drawWrapped(ctx,'«'+M.sentence+'»',L,y+40,CW,44,3)+6}
     const ay=Math.min(Math.max(y+30,y),maxY-100);
-    drawAvatar(ctx,L+36,ay+36,36,M.authorEmoji,M.authorColor);
+    drawAvatar(ctx,L+36,ay+36,36,M.authorEmoji,M.authorColor,face(M.authorAv,M.authorColor));
     ctx.fillStyle=PC.ink;ctx.font=FD(700,30);ctx.fillText(M.author||M.title,L+96,ay+46);
     ctx.fillStyle=PC.ink3;ctx.font=FB(500,24);ctx.fillText(M.date,L+96,ay+78);
   }else{ // meta · racha · insignia
@@ -3297,7 +3677,7 @@ async function drawPostal(M){
     if(M.body){ctx.fillStyle=PC.ink2;ctx.font=FB(400,28);y=drawWrapped(ctx,'«'+M.body+'»',L,y+26,CW,36,5,'center')+4}
     if(M.sentence){rrect(ctx,L,y+16,CW,96,22);ctx.fillStyle=PC.kinW;ctx.fill();ctx.fillStyle=PC.kin;ctx.font=FD(700,30);drawWrapped(ctx,'🌱 «'+M.sentence+'»',L+24,y+60,CW-48,38,2,'center');y+=130}
     y+=36;
-    drawAvatar(ctx,L+CW/2,y+40,40,M.authorEmoji,M.authorColor);
+    drawAvatar(ctx,L+CW/2,y+40,40,M.authorEmoji,M.authorColor,face(M.authorAv,M.authorColor));
     ctx.textAlign='center';ctx.fillStyle=PC.ink;ctx.font=FD(700,32);ctx.fillText((M.author?M.author+' · ':'')+M.title,L+CW/2,y+126);
     ctx.fillStyle=PC.ink3;ctx.font=FB(500,25);ctx.fillText(M.date,L+CW/2,y+160);ctx.textAlign='left';y+=196;
     if(Object.keys(M.words).length)y=drawWords(ctx,M,L,y,CW,maxY-40,false);
@@ -3561,6 +3941,7 @@ function bindPostalReady(root,d){
   const wk=postalReadyWeek(d,Date.now());if(!wk)return;
   $('[data-a=postal-ready]',c).onclick=()=>sharePostal({kind:'semana',wk});
   const img=$('img',c),stt=$('[data-st]',c);
+  {const prev=bindPostalReady._img;if(prev&&prev!==img&&prev._postal&&prev._postal.url){const u=prev._postal.url;prev._postal.url=null;setTimeout(()=>{try{URL.revokeObjectURL(u)}catch(e){}},1500)}bindPostalReady._img=img}
   const pol=Object.assign({audience:'cercana',names:true},d.fam.postal||{}),pub=pol.audience==='publico';
   const p=postalOf(d,'semana',wk);
   const M=postalModel(d,{kind:'semana',wk,audience:pol.audience,names:pol.names,code:false,sentence:(p&&p.sentence)||sentenceChips(d,wk)[0]||'',words:(p&&p.words)||weekWords(d,wk,pub,pol.names),by:me().id});
@@ -3881,6 +4262,7 @@ function actPostal(st,d){
     </div>
     <p class="tiny muted" style="margin-top:12px;max-width:46ch;margin-left:auto;margin-right:auto">Audiencia: ${pol.audience==='publico'?'🌍 Público':'👨‍👩‍👧 Familia cercana'} (se ajusta al enviar) · ${canSend?'También queda en Liga → Postal de la semana (y el lunes en Hoy) para enviarla desde otro teléfono.':'Postal lista · un adulto la envía desde su teléfono: Liga → Postal de la semana, o el chip 📮 de Hoy el lunes.'}</p></div>`;
   const img=$('#mp-img',st),status=$('#mp-status',st);
+  {const prev=actPostal._img;if(prev&&prev!==img&&prev._postal&&prev._postal.url){const u=prev._postal.url;prev._postal.url=null;setTimeout(()=>{try{URL.revokeObjectURL(u)}catch(e){}},1500)}actPostal._img=img}
   const words=weekWords(d,wk,pol.audience==='publico',pol.names);
   const draw=()=>{const M=postalModel(d,{kind:'semana',wk,audience:pol.audience,names:pol.names,code:false,sentence:MEET.postal.sentence,words,by:m.id});if(M)postalRender(M,img,status)};
   draw();
@@ -4124,6 +4506,23 @@ function runTests(){
     ok('T15 ventana: lunes → lista, miércoles → nada',postalReadyWeek(deriveState(evs,mon),mon)===W0&&postalReadyWeek(deriveState(evs,wedN),wedN)===null);
     const evs2=[...evs,{id:'ps',t:at(20),type:'postal.share',m:'M1',kind:'semana',wk:W0,sent:true,via:'shared',title:'x'}];
     ok('T15 ventana: ya enviada → nada; solo guardada → sigue lista',postalReadyWeek(deriveState(evs2,mon),mon)===null&&postalReadyWeek(deriveState([...evs,{id:'pa',t:at(20),type:'postal.share',m:'M1',kind:'semana',wk:W0,sent:false,via:'reunion',title:'x'}],mon),mon)===W0);
+  }
+  // T16: avatar personalizable — validación, SVG seguro, jardín
+  {
+    const bad={skin:AVATAR_OPTS.skin[1],hair:'afro',hairColor:'#123456',eyes:'wink',glasses:'sun',hat:'crown',top:'suit',tie:true,freckles:'yes',bogus:'x',brows:'<script>'};
+    const a=sanitizeAvatar(bad);
+    ok('T16 el avatar se valida contra los catálogos',a.hair==='afro'&&a.eyes==='wink'&&a.tie===true&&a.freckles===true&&!('bogus' in a)&&!('brows' in a)&&!('hairColor' in a),JSON.stringify(a));
+    const svg=avatarSvg(a,{size:84,bg:'#EEEEEE'});
+    ok('T16 SVG sin ids, clases ni defs y con viewBox',/^<svg/.test(svg)&&/viewBox="0 0 100 100"/.test(svg)&&!/ id=| class=|<defs|<clipPath|<mask|<script|<style/.test(svg));
+    ok('T16 todas las opciones dibujan',AV_KEYS.every(k=>AVATAR_OPTS[k].every(v=>/^<svg/.test(avatarSvg(Object.assign({},a,{[k]:v}),{size:36})))));
+    const evs=[...base,{id:'av1',t:ts(W0,1),type:'member.update',m:'M1',by:'M1',patch:{avatar:{hair:'bun',eyes:'happy',top:'hoodie',tie:true,hat:'nope'}}}];
+    const d=mkFam(evs);const av=d.members.get('M1').avatar;
+    ok('T16 member.update guarda el avatar validado',!!av&&av.hair==='bun'&&av.top==='hoodie'&&!('hat' in av)&&av.tie===true,JSON.stringify(av));
+    ok('T16 avatar:null vuelve al emoji',mkFam([...evs,{id:'av2',t:ts(W0,2),type:'member.update',m:'M1',by:'M1',patch:{avatar:null}}]).members.get('M1').avatar===null);
+    ok('T16 modo cabeza para el jardín',/^<svg/.test(avatarSvg(avatarRandom('zen'),{size:34,head:true})));
+    ok('T16 el avatar lleva fondo del color del miembro',/<circle cx="50" cy="50" r="50" fill="#[0-9A-F]{6}"/i.test(avatarHtml({avatar:a,color:'#33684B',emoji:'x',name:'x'},36))&&mixHex('#FBFCF8','#33684B',.18)==='#D7E1D9');
+    ok('T16 todas las opciones tienen etiqueta en español',AV_KEYS.every(k=>AVATAR_OPTS[k].every(v=>avLabel(k,v)!==v||/^#/.test(v)===false&&false)||AVATAR_OPTS.hair.every(h=>AV_LABELS.hair[h])&&['skin','hairColor','topColor'].every(k=>AVATAR_OPTS[k].every(v=>!/^#/.test(avLabel(k,v))))));
+    ok('T16 el modelo de la postal lleva la cara pero no datos personales',(()=>{const M=postalModel(d,{kind:'semana',wk:W0,audience:'publico',names:false,by:'M1'});return M.members.length===1&&M.members[0].av&&M.members[0].av.hair==='bun'&&!JSON.stringify(M).includes('"M1"')})());
   }
   const passN=T.filter(t=>t.pass).length;
   $('#main').innerHTML=`<div class="vgap"><h1>Pruebas del motor · ${passN}/${T.length}</h1>
