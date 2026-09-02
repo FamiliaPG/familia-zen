@@ -131,10 +131,19 @@ input[type=date]{min-width:0;max-width:100%}
 h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
 .cardbtn{display:block;width:100%;font:inherit;text-align:left;color:inherit;cursor:pointer}
 .cardbtn:hover{border-color:var(--verde)}
+/* postales */
+.postal-prev{margin-top:12px;display:flex;flex-direction:column;align-items:center}
+.postal-prev img{width:62%;max-width:300px;aspect-ratio:4/5;border-radius:14px;box-shadow:var(--shadow-lg);display:block;background:#EFF1EA}
+.postal-prev #ps-status{padding:14px;text-align:center}
+.pchip{cursor:pointer;white-space:normal;text-align:left;line-height:1.25}
+.pchip.on{background:var(--verde-soft);border-color:var(--verde);color:var(--verde-ink)}
+.sheet-actions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom));background:var(--surface);padding:12px 0 calc(10px + env(safe-area-inset-bottom));margin-top:14px;border-top:1px solid var(--line)}
+.stage-postal{display:flex;flex-direction:column;align-items:center}
+.stage-postal img{width:min(44vh,330px);aspect-ratio:4/5;border-radius:14px;box-shadow:var(--shadow-lg);display:block;background:#EFF1EA}
 
 /* modal */
 #modal-root:empty{display:none}
-.mback{position:fixed;inset:0;z-index:80;background:color-mix(in srgb,var(--ink) 40%,transparent);display:flex;align-items:flex-end;justify-content:center;animation:fade .18s}
+.mback{position:fixed;inset:0;z-index:120;background:color-mix(in srgb,var(--ink) 40%,transparent);display:flex;align-items:flex-end;justify-content:center;animation:fade .18s}
 @media(min-width:560px){.mback{align-items:center}}
 .msheet{background:var(--surface);border-radius:var(--r-lg) var(--r-lg) 0 0;width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;padding:20px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg);animation:up .24s cubic-bezier(.2,.8,.2,1)}
 @media(min-width:560px){.msheet{border-radius:var(--r-lg)}}
@@ -145,7 +154,7 @@ h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 
 /* toast */
-#toast-root{position:fixed;left:0;right:0;bottom:calc(76px + env(safe-area-inset-bottom));z-index:90;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+#toast-root{position:fixed;left:0;right:0;bottom:calc(76px + env(safe-area-inset-bottom));z-index:130;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .toast{background:var(--ink);color:var(--ground);font-weight:600;font-size:.88rem;padding:10px 18px;border-radius:99px;box-shadow:var(--shadow-lg);animation:up .25s;max-width:88vw}
 
 /* login */
@@ -204,6 +213,7 @@ h3 .qhelp{vertical-align:middle;position:relative;top:-1px;margin-left:4px}
 .wday .dots i{width:4px;height:4px;border-radius:99px}
 
 /* presenter (Reunión) */
+/* capas: topbar/tabbar 40 < presenter 100 < modal 120 < toast 130 < confeti 200 */
 #presenter{position:fixed;inset:0;z-index:100;background:var(--ground);display:flex;flex-direction:column;overflow:hidden}
 #presenter .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5vh 6vw;text-align:center;overflow-y:auto}
 #presenter .stage>*{animation:pop .5s cubic-bezier(.2,.8,.2,1)}
@@ -448,6 +458,7 @@ const CONFIG={
   SEASON_WEEKS:13, SEASON_COMPRESS:.25,
   HONOR_WEEKS:8, HONOR_BONUS:.02,
   CHEST_P:.08,
+  REFERRAL:{live:false,pct:10,twoSided:false}, // twoSided: si el descuento también lo recibe la familia invitada // código de regalo: se imprime en postales solo cuando live=true (App Store)
 };
 /* ---------- catálogos ---------- */
 const CATS={
@@ -747,15 +758,15 @@ function sendaLevelOf(xp){let L=0;while(L<40&&xp>=CONFIG.SENDA_XP(L+1))L++;retur
 function deriveState(events,now){
   const evs=[...events].sort((a,b)=>a.t-b.t||(a.id<b.id?-1:1));
   const todayK=dkey(new Date(now));
-  const D={fam:null,members:new Map(),goals:new Map(),acts:new Map(),perM:new Map(),weeks:new Map(),weekKeys:[],famStreak:0,famStreakMax:0,now,todayK,intents:[]};
+  const D={fam:null,members:new Map(),goals:new Map(),acts:new Map(),perM:new Map(),weeks:new Map(),weekKeys:[],famStreak:0,famStreakMax:0,now,todayK,intents:[],postales:[]};
   const gardenPos=new Map();D.garden=gardenPos;
   const kudos=[],sponsors=[],voids=new Set(),voidBy=new Map(),seals=new Map(),repairs=[],rests=new Map(),hards=new Map();
   /* --- fase A: estáticos --- */
   for(const e of evs){switch(e.type){
-    case 'family.create': D.fam={name:e.name,code:e.code,createdT:e.t,rewards:e.rewards||[],metaLabel:''};break;
-    case 'family.update': if(D.fam)Object.assign(D.fam,e.patch||{});break;
+    case 'family.create': D.fam={name:e.name,code:e.code,createdT:e.t,rewards:e.rewards||[],metaLabel:'',refBy:e.refBy?String(e.refBy).toUpperCase().slice(0,14):''};break;
+    case 'family.update': if(D.fam){const p=Object.assign({},e.patch||{});if('name' in p){const nm=String(p.name||'').trim().slice(0,30);if(nm)p.name=nm;else delete p.name}if('refCode' in p){const rc=String(p.refCode||'').toUpperCase();if(!/^[A-Z0-9][A-Z0-9-]{2,12}[A-Z0-9]$/.test(rc)||rc===D.fam.code)delete p.refCode;else p.refCode=rc}if('postal' in p){const q=(p.postal&&typeof p.postal==='object')?p.postal:{};p.postal={audience:q.audience==='publico'?'publico':'cercana',names:!!q.names}}Object.assign(D.fam,p)}break;
     case 'member.join': D.members.set(e.m,{id:e.m,name:String(e.name||'?').slice(0,20),emoji:AVATAR_EMOJIS.includes(e.emoji)?e.emoji:AVATAR_EMOJIS[0],color:MEMBER_COLORS.includes(e.color)?e.color:MEMBER_COLORS[0],pinHash:e.pinHash,birthYear:e.birthYear||null,adult:!!e.adult,amort:!!e.amort,sendero:false,focus:CAT_IDS.includes(e.focus)?e.focus:null,joinT:e.t});break;
-    case 'member.update': {const m=D.members.get(e.m);if(m){const p=Object.assign({},e.patch||{});if('emoji' in p&&!AVATAR_EMOJIS.includes(p.emoji))delete p.emoji;if('color' in p&&!MEMBER_COLORS.includes(p.color))delete p.color;if('name' in p)p.name=String(p.name||'').slice(0,20)||m.name;if('focus' in p&&p.focus!=null&&!CAT_IDS.includes(p.focus))delete p.focus;Object.assign(m,p)}break}
+    case 'member.update': {const m=D.members.get(e.m);if(m){const p=Object.assign({},e.patch||{});if(('adult' in p||'birthYear' in p)&&('by' in e)){const a=D.members.get(e.by);let f=null;for(const x of D.members.values())if(!f||x.joinT<f.joinT)f=x;if(!(a&&(a.adult||(f&&a.id===f.id)))){delete p.adult;delete p.birthYear}}if('emoji' in p&&!AVATAR_EMOJIS.includes(p.emoji))delete p.emoji;if('color' in p&&!MEMBER_COLORS.includes(p.color))delete p.color;if('name' in p)p.name=String(p.name||'').slice(0,20)||m.name;if('focus' in p&&p.focus!=null&&!CAT_IDS.includes(p.focus))delete p.focus;if('postalOptOut' in p)p.postalOptOut=!!p.postalOptOut;Object.assign(m,p)}break}
     case 'goal.create': D.goals.set(e.gid,{gid:e.gid,m:e.m,createdT:e.t,f:Object.assign({},e.f),actions:e.actions||[],estadoLog:[{t:e.t,v:e.f.estado||'No iniciado'}],progresoLog:[{t:e.t,v:e.f.progreso||0}],notas:e.f.notas||'',kpiSum:0,honorClosed:false,completedT:null});break;
     case 'goal.update': {const g=D.goals.get(e.gid);if(!g)break;
       if(e.f){Object.assign(g.f,e.f);
@@ -780,7 +791,9 @@ function deriveState(events,now){
     case 'meeting.seal': seals.set(e.week,e);break;
     case 'streak.repair': repairs.push(e);break;
     case 'commit.intent': D.intents.push(e);break;
+    case 'postal.share': D.postales.push({id:e.id,t:e.t,m:e.m,sub:e.sub!=null?String(e.sub).slice(0,40):null,kind:kindOk(e.kind)?e.kind:'semana',wk:e.wk||null,ref:e.ref!=null?String(e.ref).slice(0,40):null,audience:e.audience==='publico'?'publico':'cercana',names:!!e.names,code:!!e.code,sent:!!e.sent,via:String(e.via||'').slice(0,12),title:String(e.title||'').slice(0,80),sentence:String(e.sentence||'').slice(0,120),dedic:String(e.dedic||'').slice(0,60),words:(e.words&&typeof e.words==='object')?Object.fromEntries(Object.entries(e.words).filter(([k])=>['f1','f2','f3'].includes(k)).map(([k,v])=>[k,String(v||'').slice(0,240)])):null,consent:Array.isArray(e.consent)?e.consent.slice(0,8):[]});break;
   }}
+  D.postales.sort((a,b)=>b.t-a.t||(a.id<b.id?1:-1));
   if(!D.fam)return D;
   for(const a of D.acts.values())if(a.done&&voids.has(a.aid))a.voided=true;
   /* índices */
@@ -1101,7 +1114,7 @@ function deriveState(events,now){
       // sello
       const seal=seals.get(wk);
       if(seal&&Array.isArray(seal.att)&&memArr.every(m=>m.joinT>weekEndTs(wk)||seal.att.includes(m.id))){
-        wrec.sealed=true;
+        wrec.sealed=true;wrec.sealAtt=seal.att.slice(0,12);
         for(const mem of memArr){const pm=D.perM.get(mem.id);const mw2=pm&&pm.week.get(wk);if(mw2){mw2.xpW+=CONFIG.SEAL_XP;pm.stats.sealsSeason++;pm.stats.sealsSeasonMax=Math.max(pm.stats.sealsSeasonMax,pm.stats.sealsSeason)}}
       }
       // fin de temporada: compresión + reinicios
@@ -1270,15 +1283,17 @@ function renderOnboarding(main){
     <div class="card">
       <h3>Crear la familia</h3>
       <label class="field"><span class="lab">Nombre de la familia</span><input id="ob-name" placeholder="Ej. Los Álvarez" maxlength="30"></label>
-      <label class="field"><span class="lab">Código de invitación (compártelo con tu familia)</span>
+      <label class="field"><span class="lab">Clave de acceso de la familia (compártela solo con quien vive aquí)</span>
         <div class="row"><input id="ob-code" value="${code}" readonly style="font-family:var(--font-d);letter-spacing:.2em;font-weight:700;text-align:center"></div></label>
+      <label class="field"><span class="lab">¿Otra familia te recomendó la app? Código de regalo <span class="muted">(opcional)</span></span><input id="ob-ref" maxlength="14" placeholder="ZEN-XXXXX" style="text-transform:uppercase;letter-spacing:.1em"></label>
       <button class="btn big" style="margin-top:16px" id="ob-go">Continuar</button>
-      <p class="tiny muted" style="margin-top:10px">Quien tenga el enlace + este código podrá unirse y crear su perfil.</p>
+      <p class="tiny muted" style="margin-top:10px">Quien tenga el enlace + esta clave podrá unirse y crear su perfil. Nunca la publiques.</p>
     </div></div>`;
   $('#ob-go').onclick=()=>{
     const name=$('#ob-name').value.trim();
     if(!name)return toast('Escribe el nombre de la familia');
-    appendEvents([{type:'family.create',name,code}]);
+    const refBy=(($('#ob-ref')||{}).value||'').trim().toUpperCase();
+    appendEvents([Object.assign({type:'family.create',name,code},refBy?{refBy}:{})]);
     profileEditor(null,{founder:true});
   };
 }
@@ -1326,15 +1341,16 @@ function pinPrompt(mid){
 function joinFlow(){
   const d=D();
   const mb=modal(`<h3>Unirme a ${esc(d.fam.name)}</h3>
-    <label class="field"><span class="lab">Código de invitación</span><input id="j-code" placeholder="ABC123" maxlength="6" style="text-transform:uppercase;letter-spacing:.2em;text-align:center;font-weight:700"></label>
+    <label class="field"><span class="lab">Clave de acceso de la familia</span><input id="j-code" placeholder="ABC123" maxlength="6" style="text-transform:uppercase;letter-spacing:.2em;text-align:center;font-weight:700"></label>
     <button class="btn big" style="margin-top:14px" id="j-go">Verificar</button>`);
   $('#j-go',mb).onclick=()=>{
-    if($('#j-code',mb).value.trim().toUpperCase()!==d.fam.code)return toast('Código incorrecto');
+    if($('#j-code',mb).value.trim().toUpperCase()!==d.fam.code)return toast('Clave de acceso incorrecta');
     mb.remove();profileEditor(null,{});
   };
 }
 function profileEditor(mid,{founder}={}){
   const d=D(),ex=mid?d.members.get(mid):null;
+  const lock=!!(ex&&!isAdult(d,me()));
   let emoji=ex?ex.emoji:AVATAR_EMOJIS[Math.random()*AVATAR_EMOJIS.length|0];
   let color=ex?ex.color:MEMBER_COLORS[d.members.size%MEMBER_COLORS.length];
   const mb=modal(`<h3>${ex?'Editar mi perfil':'Crear mi perfil'}</h3>
@@ -1342,10 +1358,10 @@ function profileEditor(mid,{founder}={}){
     <label class="field"><span class="lab">Tu avatar</span><div class="emoji-grid" id="p-emo">${AVATAR_EMOJIS.map(e=>`<button data-e="${e}" class="${e===emoji?'on':''}">${e}</button>`).join('')}</div></label>
     <label class="field"><span class="lab">Tu color</span><div class="color-row" id="p-col">${MEMBER_COLORS.map(c=>`<button data-c="${c}" style="background:${c}" class="${c===color?'on':''}" aria-label="color"></button>`).join('')}</div></label>
     <div class="grid2">
-      <label class="field"><span class="lab">Año de nacimiento <span class="muted">(opcional)</span></span><input id="p-year" inputmode="numeric" maxlength="4" value="${ex&&ex.birthYear?ex.birthYear:''}" placeholder="1990"></label>
+      <label class="field"><span class="lab">Año de nacimiento <span class="muted">(opcional${lock?' · lo cambia un adulto':''})</span></span><input id="p-year" inputmode="numeric" maxlength="4" value="${ex&&ex.birthYear?ex.birthYear:''}" placeholder="1990" ${lock?'disabled':''}></label>
       <label class="field"><span class="lab">PIN de 4 dígitos</span><input id="p-pin" inputmode="numeric" maxlength="4" placeholder="${ex&&ex.pinHash?'••••':'1234'}"></label>
     </div>
-    <label class="field row" style="gap:8px"><input type="checkbox" id="p-adult" style="width:auto" ${ex&&ex.adult?'checked':founder?'checked':''}><span class="small">Soy adulto/a responsable de la familia</span></label>
+    <label class="field row" style="gap:8px"><input type="checkbox" id="p-adult" style="width:auto" ${ex&&ex.adult?'checked':founder?'checked':''} ${lock?'disabled':''}><span class="small">Soy adulto/a responsable de la familia${lock?' <span class="tiny muted">(lo marca un adulto)</span>':''}</span></label>
     <button class="btn big" style="margin-top:14px" id="p-go">${ex?'Guardar':'¡Comenzar mi camino!'}</button>`);
   mb.classList.add('sticky');
   $('#p-emo',mb).onclick=e=>{const b=e.target.closest('[data-e]');if(!b)return;emoji=b.dataset.e;$$('#p-emo button',mb).forEach(x=>x.classList.toggle('on',x===b))};
@@ -1362,7 +1378,8 @@ function profileEditor(mid,{founder}={}){
     if(ex){
       const patch={name,emoji,color,birthYear:by,adult};
       if(pin.length===4)patch.pinHash=await hashPin(pin,ex.id);
-      appendEvents([{type:'member.update',m:ex.id,patch}]);
+      if(lock){delete patch.adult;delete patch.birthYear}
+      appendEvents([{type:'member.update',m:ex.id,by:SESSION,patch}]);
     }else{
       const idNew=uid();
       appendEvents([{type:'member.join',m:idNew,name,emoji,color,pinHash:await hashPin(pin,idNew),birthYear:by,adult,amort}]);
@@ -1411,7 +1428,7 @@ function renderHoy(main,d){
   const wDn=sum(schedWeek.filter(a=>a.done&&!a.voided).map(a=>CONFIG.BASE[a.tier]||10));
   main.innerHTML=`<div class="vgap">
     <div class="row between">
-      <div><div class="eyebrow">${fmtLong(today)}</div><h1 style="font-size:1.5rem">${greet}, ${esc(m.name)}</h1></div>
+      <div><div class="eyebrow">${fmtLong(today)}</div><h1 style="font-size:1.5rem">${greet}, ${esc(m.name)}</h1>${(()=>{const lc=lastClosedWeek(d),p=lc&&postalOf(d,'semana',lc),dow=new Date().getDay();return (p&&p.sentence&&(dow===1||dow===2))?`<div class="tiny" style="color:var(--verde-ink);margin-top:2px">«${esc(p.sentence)}»</div>`:''})()}</div>
       <div style="text-align:right"><div class="dnum" style="font-size:1.55rem;color:var(--kin)">${nfmt(mw?mw.pts:0)}</div><div class="tiny muted">pts esta semana</div></div>
     </div>
     ${away?`<div class="banner info">🌱 ¡Bienvenido/a de vuelta! Tu próxima actividad vale <b>×2</b>. ¿Quieres aligerar la semana? <button class="btn small ghost" data-a="minweek">Reducir a versión mínima</button></div>`:''}
@@ -1456,6 +1473,7 @@ function renderHoy(main,d){
   bindActCards(main,d);
   const q=(s,f)=>{const b=$(`[data-a=${s}]`,main);if(b)b.onclick=f};
   q('add',()=>schedModal({date:today}));
+  q('postal-ready',()=>sharePostal({kind:'semana',wk:lastClosedWeek(d)}));
   q('plan',()=>schedModal({date:addDays(today,1)}));
   q('rest',()=>{appendEvents([{type:'day.rest',m:m.id,date:today}]);toast('Día de descanso marcado 🍵')});
   q('hard',()=>{
@@ -1483,7 +1501,7 @@ function famMini(d){
   const mems=[...d.members.values()];
   const tot=sum(mems.map(x=>{const w=d.perM.get(x.id).week.get(wk);return w?w.pts:0}));
   return `<div class="card">
-    <div class="row between"><h3 class="small">🏮 La Cosecha familiar</h3><span class="chip">Racha familiar: ${d.famStreak} 🏮</span></div>
+    <div class="row between"><h3 class="small">🏮 La Cosecha familiar</h3><div class="row" style="gap:6px">${(()=>{const mm=me(),lc=lastClosedWeek(d),dow=new Date().getDay();return (mm&&isAdult(d,mm)&&lc&&(dow===1||dow===2)&&!((postalOf(d,'semana',lc)||{}).sent))?`<button class="chip" data-a="postal-ready" style="background:var(--kin-wash);color:var(--kin);border-color:color-mix(in srgb,var(--kin) 40%,transparent)">📮 Postal lista</button>`:''})()}<span class="chip">Racha familiar: ${d.famStreak} 🏮</span></div></div>
     <div class="row" style="margin-top:10px;gap:4px;flex-wrap:wrap">${mems.map(x=>{
       const w=d.perM.get(x.id).week.get(wk);
       return `<span class="chip" style="border-color:${esc(x.color)}">${esc(x.emoji)} <b class="num">${nfmt(w?w.pts:0)}</b></span>`}).join('')}
@@ -1566,9 +1584,11 @@ function finishComplete(a,{kpi=null,note=''}={},btn){
   const s1=(d.perM.get(a.m)||{}).dayStreak||0;
   const sms=s1>s0?CONFIG.STREAK_MS.find(x=>x.d===s1):null;
   if(sms)setTimeout(()=>{confetti(sms.d>=30?160:80);chime('up');
-    modal(`<div style="text-align:center"><div style="font-size:3rem">${sms.e}</div><h3>¡Racha de ${sms.n}!</h3>
+    const smb=modal(`<div style="text-align:center"><div style="font-size:3rem">${sms.e}</div><h3>¡Racha de ${sms.n}!</h3>
     <p class="small" style="margin-top:6px">${s1} días seguidos completando lo planificado · <b class="gold">+${sms.xp} XP</b></p>
-    <p class="tiny muted" style="margin-top:6px">Mira tu progreso de racha en la Liga 🔥</p></div>`)},na&&na._chest?1700:700);
+    <p class="tiny muted" style="margin-top:6px">Mira tu progreso de racha en la Liga 🔥</p>
+    ${(sms.d>=7&&isAdult(d,me())&&!(d.members.get(a.m)||{}).postalOptOut)?`<button class="btn small sec" id="st-share" style="margin-top:12px">📮 Postal del hito</button>`:''}</div>`);
+    const sb=$('#st-share',smb);if(sb)sb.onclick=()=>{smb.remove();sharePostal({kind:'racha',days:s1,m:a.m})}},na&&na._chest?1700:700);
   toast(`${msg} · +${pts} pts`,3200);
 }
 /* ---------- calendario externo (Google / Apple) · Puerto Rico = UTC-4 todo el año ---------- */
@@ -1928,15 +1948,12 @@ function goalDetail(gid){
   const pr=$('#gd-prog',mb);
   if(pr)pr.onchange=()=>{appendEvents([{type:'goal.update',gid,f:{progreso:+pr.value}}],{silent:true});
     if(+pr.value>=100){appendEvents([{type:'goal.update',gid,f:{estado:'Completado'}}],{silent:true});
-      mb.remove();rerender();confetti(140);chime('big');
-      modal(`<div style="text-align:center"><div style="font-size:3.4rem">🏆</div><h3>¡Objetivo completado!</h3>
-        <p class="small muted" style="margin-top:6px">${esc(g.f.smartFinal||g.f.objetivo||'')}</p>
-        <p class="gold" style="font-weight:700;margin-top:8px">+${CONFIG.GOAL_XP} XP · Trofeo permanente</p></div>`)}};
+      mb.remove();rerender();confetti(140);chime('big');celebrateGoal(gid)}};
   const se=$('#gd-est',mb);
   if(se)se.onchange=()=>{const v=se.value;
     appendEvents([{type:'goal.update',gid,f:{estado:v,...(v==='Completado'?{progreso:100}:{})}}],{silent:true});
     mb.remove();rerender();
-    if(v==='Completado'){confetti(140);chime('big')}};
+    if(v==='Completado'){confetti(140);chime('big');celebrateGoal(gid)}};
   q('#gd-honor',()=>{
     const nb=modal(`<h3>Cerrar con honor</h3><p class="small muted">Cerrar una meta que ya no encaja no es fallar: es aprender. +${CONFIG.HONOR_XP} XP. ¿Qué aprendiste?</p>
       <textarea id="h-note" rows="2" style="margin-top:8px" placeholder="Una línea sobre el aprendizaje"></textarea>
@@ -2176,6 +2193,10 @@ function renderGuia(main,d){
       <p>La racha semanal nunca se reinicia a cero: si fallas, se <b>parte a la mitad</b>. Y si vuelves tras días fuera, tu primera actividad vale ×2. Aquí nadie te regaña: se vuelve a empezar, siempre.</p></div></details>
     <details class="zen"><summary>🤝 Honestidad</summary><div class="inner small muted">
       <p>Las actividades grandes piden evidencia; las metas piden su KPI. En la reunión se muestran los 3 mejores registros de cada uno. Cualquiera puede plantear una <b>duda</b>: si la familia acuerda que no cuenta, solo se revierten los puntos — sin multas ni castigos. 8 semanas sin anulaciones = insignia <b>Palabra Firme</b> (+2% permanente).</p></div></details>
+    <details class="zen"><summary>📮 Postales y código de regalo</summary><div class="inner small muted">
+      <p>Cada domingo, al cerrar la semana (18:00), nace una <b>postal</b> (si además la sellan en la reunión, lleva el sello 📿): una imagen con lo que sembramos juntos (sin puestos ni podio) para enviar a los abuelos, al grupo de la familia o a quien quieras. También hay postales de hito (una meta cumplida, una racha de 7+ días, una insignia rara o mejor) y «Nuestra historia»: tres frases sobre lo que nos funcionó, para otra familia que empieza.</p>
+      <p><b>Privacidad:</b> la postal nunca lleva el enlace de la app ni la clave de acceso. En «Público» los menores salen solo con su avatar, sin nombre. Solo los adultos envían; cualquiera puede guardarla en el álbum (Liga). Compartir no da puntos ni XP.</p>
+      <p><b>Código de regalo:</b> cada familia tiene el suyo (Perfil → Regala 10%). Cuando otra familia se suscriba con él, las dos reciben un 10% de descuento. Se activa cuando la app llegue a la App Store.</p></div></details>
   </div>`;
   fmlInit(main);
   $$('.fml',main).forEach(i=>{
@@ -2225,7 +2246,7 @@ function renderLiga(main,d){
           ${hit?'background:var(--kin-bright);color:#2A2107':rest?'background:var(--verde-soft)':'background:var(--sunken);color:var(--ink3)'};
           ${day===d.todayK&&!hit?'outline:2px dashed var(--kin);outline-offset:-2px':''}">${hit?'✓':rest?'🛌':future?'':'·'}</div></div>`}).join('');
       return `<div class="card">
-        <div class="row between"><h3 class="small">🔥 Tu racha diaria <button type="button" class="qhelp" id="lg-streakhelp" title="Premios de racha">?</button></h3><span class="tiny muted">récord: ${pm.dayStreakMax} ${pm.dayStreakMax===1?'día':'días'}</span></div>
+        <div class="row between"><h3 class="small">🔥 Tu racha diaria <button type="button" class="qhelp" id="lg-streakhelp" title="Premios de racha">?</button></h3><span class="row" style="gap:6px">${(pm.dayStreak>=7&&isAdult(d,me())&&!me().postalOptOut)?`<button class="chip" data-a="postal-racha" title="Postal del hito">📮 Postal</button>`:''}<span class="tiny muted">récord: ${pm.dayStreakMax} ${pm.dayStreakMax===1?'día':'días'}</span></span></div>
         <div class="row" style="margin-top:10px;gap:16px;align-items:center">
           <div style="text-align:center;flex:none;min-width:64px"><div class="dnum" style="font-size:2.3rem;font-weight:900;color:var(--kin);line-height:1.1">${pm.dayStreak}</div><div class="tiny muted">${pm.dayStreak===1?'día seguido':'días seguidos'}</div></div>
           <div class="grow row" style="justify-content:space-between">${dots}</div>
@@ -2249,6 +2270,7 @@ function renderLiga(main,d){
         ${d.fam.rewards&&d.fam.rewards.length?`<span>🎁 ${esc((d.fam.rewards.find(r=>r.at>d.famStreak)||d.fam.rewards[d.fam.rewards.length-1]).label)} a las ${(d.fam.rewards.find(r=>r.at>d.famStreak)||d.fam.rewards[d.fam.rewards.length-1]).at}</span>`:''}</div>
     </div>
     ${lastClosed?officialTable(lastClosed,d):'<div class="card"><p class="muted small" style="text-align:center">La primera clasificación oficial aparecerá al cerrar la semana (domingo 18:00).</p></div>'}
+    ${postalHubHtml(d)}
     <div class="card">
       <h3 class="small">🎋 Ritmo — fiabilidad contigo mismo</h3>
       <div class="vgap" style="margin-top:10px">${mems.map(m=>{const pm=d.perM.get(m.id);
@@ -2269,6 +2291,8 @@ function renderLiga(main,d){
   </div>`;
   $('[data-a=meet]',main).onclick=()=>startMeeting();
   const sh=$('#lg-streakhelp',main);if(sh)sh.onclick=()=>showStreakRewards();
+  bindPostalHub(main,d);
+  const pr=$('[data-a=postal-racha]',main);if(pr)pr.onclick=()=>sharePostal({kind:'racha',days:d.perM.get(SESSION).dayStreak,m:SESSION});
 }
 function officialTable(wrec,d){
   const wk=wrec.wk;
@@ -2761,12 +2785,20 @@ function renderPerfil(main,d){
         <div class="badgecell won" style="--rc:${CATS[c].c}"><span class="bic">${CATS[c].e}</span><b class="tiny">${sendaTitle(c,l)}</b><span class="tiny muted">${CATS[c].n} · Nv ${l}</span></div>`).join('')}</div></div>`:''}
     ${trophies.length?`<div class="card"><h3 class="small">🏆 Salón de Trofeos</h3>
       <div class="vgap" style="margin-top:8px">${trophies.map(g=>`
-        <div class="row small"><span>${g.honorClosed?'🙏':'🏆'}</span><span class="grow">${esc(g.f.objetivo||g.f.smartFinal)}</span><span class="tiny muted">${fmtDate(dkey(new Date(g.completedT)))}</span></div>`).join('')}</div></div>`:''}
+        <div class="row small"><span>${g.honorClosed?'🙏':'🏆'}</span><span class="grow">${esc(g.f.objetivo||g.f.smartFinal)}</span><span class="tiny muted">${fmtDate(dkey(new Date(g.completedT)))}</span>${(isAdult(d,m)&&!g.honorClosed&&!m.postalOptOut)?`<button class="chip" data-tshare="${g.gid}" title="Postal del hito">📮</button>`:''}</div>`).join('')}</div></div>`:''}
+    ${isAdult(d,m)?`<button type="button" class="card cardbtn" data-a="ref">
+      <div class="row" style="gap:12px;align-items:center">
+        <span style="font-size:1.6rem;flex:none">🎁</span>
+        <div class="grow"><b>Regala ${CONFIG.REFERRAL.pct}% a otra familia</b>
+          <p class="tiny muted" style="margin:3px 0 0">Tu código de regalo: <b style="letter-spacing:.08em">${esc(refCodeOf(d.fam))}</b>${CONFIG.REFERRAL.live?'':' · se activa con la App Store'}</p></div>
+        <span aria-hidden="true" style="font-size:1.25rem;font-weight:800;color:var(--verde-ink);flex:none">→</span>
+      </div>
+    </button>`:''}
     <div class="card">
       <div class="row between"><h3 class="small">🎖 Insignias · ${pm.badges.size}/${BADGES.length}</h3><span class="tiny muted">💛 ${CONFIG.KUDOS_WEEK-kudosGiven} kudos restantes esta semana</span></div>
       <div class="grid3" style="margin-top:10px">
         ${BADGES.filter(b=>!b.hidden||pm.badges.has(b.id)).map(b=>{const on=pm.badges.has(b.id);const rc=RARITY[b.r];
-          return `<div class="badgecell ${on?'won':'locked'}" style="--rc:${rc.c}" title="${esc(b.d)}${on?' · ¡Ganada!':''}">${on?'<span class="bwon">✓</span>':''}<span class="bic">${b.e}</span><b class="tiny">${b.n}</b>
+          const sh=on&&isAdult(d,m)&&b.r!=='comun'&&!m.postalOptOut;return `<div class="badgecell ${on?'won':'locked'}" ${sh?`data-bshare="${b.id}" role="button" tabindex="0"`:''} style="--rc:${rc.c}${sh?';cursor:pointer':''}" title="${esc(b.d)}${on?' · ¡Ganada!':''}${sh?' · toca para hacer una postal':''}">${on?'<span class="bwon">✓</span>':''}<span class="bic">${b.e}</span><b class="tiny">${b.n}</b>
           <span class="raritychip" style="background:color-mix(in srgb,${rc.c} 16%,transparent);color:${rc.c}">${rc.n}</span></div>`}).join('')}
       </div>
       <p class="tiny muted" style="margin-top:8px">Hay insignias ocultas que se revelan al ganarlas ✨</p>
@@ -2788,6 +2820,8 @@ function renderPerfil(main,d){
         <input type="checkbox" data-set="sendero" ${m.sendero?'checked':''} style="width:auto"></label>
       <label class="row between" style="margin-top:10px"><span class="small">🛡 Amortiguador <span class="tiny muted">(pérdidas de Ritmo ×0.75 en época difícil)</span></span>
         <input type="checkbox" data-set="amort" ${m.amort?'checked':''} style="width:auto"></label>
+      <label class="row between" style="margin-top:10px"><span class="small">📮 No aparecer en las postales <span class="tiny muted">(ni nombre ni avatar)</span></span>
+        <input type="checkbox" data-set="postalOptOut" ${m.postalOptOut?'checked':''} style="width:auto"></label>
       <label class="row between" style="margin-top:10px"><span class="small">🔔 Sonidos</span>
         <input type="checkbox" data-set="sound" ${!d.fam.mute?'checked':''} style="width:auto"></label>
       <label class="row between" style="margin-top:10px"><span class="small">🌗 Tema <span class="tiny muted">(este dispositivo)</span></span>
@@ -2797,7 +2831,8 @@ function renderPerfil(main,d){
           <option value="dark" ${themeNow==='dark'?'selected':''}>Oscuro</option>
         </select></label>
       ${m.adult?`<div class="hr"></div>
-      <div class="row between"><span class="small">Código de invitación</span><b style="font-family:var(--font-d);letter-spacing:.15em">${esc(d.fam.code)}</b></div>
+      <label class="field"><span class="lab">🏠 Nombre de la familia <span class="muted">(sale en las postales)</span></span><div class="row" style="gap:6px"><input id="fam-name" maxlength="30" value="${esc(d.fam.name)}" class="grow"><button class="btn small sec" id="fam-name-save">Guardar</button></div></label>
+      <div class="row between" style="margin-top:10px"><span class="small">🔒 Clave de acceso de la familia <span class="tiny muted">(privada · no la publiques)</span></span><span class="row" style="gap:8px"><b id="famcode" hidden style="font-family:var(--font-d);letter-spacing:.15em">${esc(d.fam.code)}</b><button class="chip" id="famcode-show">Mostrar</button></span></div>
       <label class="field"><span class="lab">🎁 Recompensas de la Racha Familiar (etiquetas reales, definidas por la familia)</span>
         <div class="vgap" id="rw-list">${(d.fam.rewards||[]).map((r,i)=>`<div class="row small"><b class="num" style="width:26px">${r.at}s</b><span class="grow">${esc(r.label)}</span><button data-rwrm="${i}" style="color:var(--clay)">✕</button></div>`).join('')}</div>
         <div class="row" style="margin-top:8px;gap:6px"><input id="rw-at" inputmode="numeric" placeholder="4" style="width:64px"><input id="rw-label" placeholder="Ej. salida familiar al monte" class="grow"><button class="btn small sec" id="rw-add">＋</button></div></label>`:''}
@@ -2811,6 +2846,11 @@ function renderPerfil(main,d){
   </div>`;
   const q=(s,f)=>{const b=$(`[data-a=${s}]`,main);if(b)b.onclick=f};
   q('edit',()=>profileEditor(m.id));
+  q('ref',()=>refModal());
+  $$('[data-tshare]',main).forEach(b=>b.onclick=()=>sharePostal({kind:'meta',gid:b.dataset.tshare,m:m.id}));
+  $$('[data-bshare]',main).forEach(b=>b.onclick=()=>sharePostal({kind:'insignia',badge:b.dataset.bshare,m:m.id}));
+  const fns=$('#fam-name-save',main);if(fns)fns.onclick=()=>{const v=($('#fam-name',main).value||'').trim().slice(0,30);if(!v)return toast('Escribe el nombre de la familia');appendEvents([{type:'family.update',patch:{name:v}}]);toast('Nombre guardado: '+v)};
+  const fcs=$('#famcode-show',main);if(fcs)fcs.onclick=()=>{const fc=$('#famcode',main);fc.hidden=!fc.hidden;fcs.textContent=fc.hidden?'Mostrar':'Ocultar'};
   q('calcopy',async()=>{const u=`${SUPA.url}/functions/v1/ics?m=${m.id}`;
     try{await navigator.clipboard.writeText(u);toast('Enlace copiado · pégalo en Google Calendar (Desde URL)')}
     catch(_e){prompt('Copia este enlace:',u)}});
@@ -2866,6 +2906,556 @@ function renderPerfil(main,d){
     appendEvents([{type:'family.update',patch:{rewards}}]);
   });
 }
+/* ================= POSTALES — compartir en familia y hacia afuera ================= */
+/* Reglas duras (probadas en runTests T13): una postal NUNCA lleva el enlace de la app, la clave de acceso
+   (fam.code), ids de miembros, años de nacimiento, notas/evidencias ni cifras por persona. Los menores salen
+   solo con su avatar cuando la audiencia es «Público». Compartir no da XP ni puntos. */
+const SHARE={brand:'Familia Zen',tag:'metas SMART · reunión cada domingo',W:1080,H:1350};
+const REF_ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const KIND_META={semana:{e:'📮',t:'Postal de la semana'},meta:{e:'🏆',t:'Postal del hito'},racha:{e:'🔥',t:'Postal del hito'},insignia:{e:'🎖',t:'Postal del hito'},relato:{e:'✍️',t:'Nuestra historia'},temporada:{e:'✉️',t:'Carta de temporada'}};
+const kindOk=k=>Object.prototype.hasOwnProperty.call(KIND_META,k);
+const WORDS_Q=[['f1','Lo que nos funcionó','Ej. planificar el domingo y empezar por lo fácil'],['f2','Lo que aprendimos','Ej. que celebrar lo pequeño mantiene la racha'],['f3','Para una familia que empieza','Ej. una sola actividad Semilla por persona']];
+const SENT_BY_CAT={ejercicio:'En casa nos movemos.',lectura:'En casa leemos todos los días.',meditacion:'Somos una familia que respira.',salud:'Cuidamos nuestra salud, juntos.',nutricion:'En casa comemos con conciencia.',espiritual:'Somos una familia con raíces.',social:'Somos una familia que se cuida entre sí.',cursos:'Somos una familia que sigue aprendiendo.',profesional:'Trabajamos con propósito.',sueno:'En casa descansamos bien.',otro:'Poco a poco se anda lejos.'};
+function refCodeOf(fam){
+  if(!fam)return '';
+  const own=String(fam.refCode||'').toUpperCase();
+  if(/^[A-Z0-9][A-Z0-9-]{2,12}[A-Z0-9]$/.test(own)&&own!==fam.code)return own;
+  let h=2166136261;const s='ref|'+fam.createdT;
+  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}
+  h>>>=0;let out='';
+  for(let i=0;i<5;i++){out+=REF_ALPHA[h%32];h=Math.floor(h/32)}
+  return 'ZEN-'+out;
+}
+function founderId(d){let f=null;for(const m of d.members.values())if(!f||m.joinT<f.joinT)f=m;return f?f.id:null}
+const isAdult=(d,m)=>!!m&&(!!m.adult||m.id===founderId(d));
+const isMinor=(d,m)=>!!m&&!isAdult(d,m)&&(!m.birthYear||(new Date().getFullYear()-m.birthYear)<18);
+const weekLabel=wk=>{const a=fromKey(wk),b=fromKey(addDays(wk,6));
+  return a.getMonth()===b.getMonth()?`${a.getDate()}–${b.getDate()} de ${MESES[b.getMonth()]}`:`${a.getDate()} ${MESES[a.getMonth()].slice(0,3)} – ${b.getDate()} ${MESES[b.getMonth()].slice(0,3)}`};
+function famStreakAt(d,wk){let s=0;for(const k of d.weekKeys){if(k>wk)break;const w=d.weeks.get(k);if(!w||!w.closed)continue;if(w.famMet)s++;else if(w.famTarget>0)s=0}return s}
+function sealedRunAt(d,wk){let s=0;for(const k of d.weekKeys){if(k>wk)break;const w=d.weeks.get(k);if(!w||!w.closed)continue;s=w.sealed?s+1:0}return s}
+function lastClosedWeek(d){const c=[...d.weeks.values()].filter(w=>w.closed);return c.length?c[c.length-1].wk:null}
+const postalOf=(d,kind,key)=>d.postales.find(p=>p.kind===kind&&(kind==='semana'?p.wk===key:p.ref===key));
+/* ---- frases de identidad sugeridas (verdaderas: salen de los datos) ---- */
+function sentenceChips(d,wk){
+  const out=[],solo=d.members.size===1;
+  if(wk&&sealedRunAt(d,wk)>=1)out.push(solo?'Me reúno conmigo cada domingo.':'Somos una familia que se reúne los domingos.');
+  const w=wk&&d.weeks.get(wk);if(w&&w.famMet)out.push(solo?'Esta semana cumplí mi meta.':'Esta semana cumplimos nuestra meta en familia.');
+  const cnt={};for(const a of d.acts.values())if(a.done&&!a.voided&&(!wk||monday(a.date)===wk))cnt[a.cat]=(cnt[a.cat]||0)+1;
+  const top=Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,2);
+  for(const[c]of top){const s=SENT_BY_CAT[c];if(s&&!out.includes(s))out.push(s)}
+  if(!out.includes('Poco a poco se anda lejos.'))out.push('Poco a poco se anda lejos.');
+  return out.slice(0,4);
+}
+/* ---- modelo puro (sin DOM): el ÚNICO camino de los datos a la postal ---- */
+function postalModel(d,p){
+  const fam=d.fam,pub=p.audience==='publico',solo=d.members.size===1;
+  const by=d.members.get(p.by)||null;
+  const nameOf=m=>(p.names&&m&&!(pub&&isMinor(d,m))&&!m.postalOptOut)?m.name:'';
+  const M={kind:p.kind,brand:SHARE.brand,tag:SHARE.tag,title:(pub&&!p.names)?(solo?'Mi camino':'Nuestra familia'):String(fam.name||''),
+    eyebrow:'',date:'',hero:'',sub:'',pride:'',proof:'',body:'',cats:[],members:[],sentence:String(p.sentence||'').slice(0,120),
+    dedic:String(p.dedic||'').slice(0,60),words:{},method:'',seal:null,tenure:'',author:'',authorEmoji:by?by.emoji:'',authorColor:by?by.color:'',
+    code:(p.code&&p.audience==='publico'&&CONFIG.REFERRAL.live)?refCodeOf(fam):'',pct:CONFIG.REFERRAL.pct,consentNeeded:false,minorFramed:false};
+  for(const[k]of WORDS_Q){const v=p.words&&p.words[k];if(v)M.words[k]=String(v).trim().slice(0,240)}
+  const wi=p.wk?d.weekKeys.indexOf(p.wk):-1;
+  M.tenure=wi>=0?`Temporada ${Math.floor(wi/CONFIG.SEASON_WEEKS)+1} · semana ${(wi%CONFIG.SEASON_WEEKS)+1}`:'';
+  if(p.kind==='semana'){
+    const wk=p.wk,w=d.weeks.get(wk)||null,closed=!!(w&&w.closed);
+    M.eyebrow='Postal de la semana';M.date=weekLabel(wk);
+    const mems=[...d.members.values()].filter(m=>m.joinT<=weekEndTs(wk)&&!m.postalOptOut).sort((a,b)=>a.joinT-b.joinT);
+    let doneN=0,totN=0;const cats={};
+    const rows=mems.map(m=>{
+      const pm=d.perM.get(m.id),mw=pm&&pm.week.get(wk);
+      const acts=[...d.acts.values()].filter(a=>a.m===m.id&&!a.canceled&&monday(a.date)===wk);
+      const done=acts.filter(a=>a.done&&!a.voided);
+      doneN+=done.length;totN+=acts.length;
+      const cn={};for(const a of done){cn[a.cat]=(cn[a.cat]||0)+1;cats[a.cat]=(cats[a.cat]||0)+1}
+      const topc=Object.entries(cn).sort((x,y)=>y[1]-x[1])[0];
+      let line='';
+      if(mw&&mw.perfect)line='🌟 Semana impecable';
+      else if(mw&&mw.crowns&&mw.crowns.length)line='👑 '+CATS[mw.crowns[0]].n;
+      else if(closed&&w.awards.constancia===m.id)line='🧘 Constancia';
+      else if(closed&&w.awards.mejorado===m.id)line='🚀 Más mejorado';
+      else if(closed&&w.awards.corazon===m.id)line='💛 Corazón de la familia';
+      else if(topc)line=CATS[topc[0]].e+' '+CATS[topc[0]].n;
+      else if(done.length)line='🌱 Presente';
+      return {emoji:m.emoji,color:m.color,name:nameOf(m),line,done:done.length};
+    });
+    if(rows.some(r=>r.done===0))rows.forEach(r=>r.line='');
+    M.members=rows;
+    M.hero=totN?(solo?`Me propuse ${totN} ${totN===1?'cosa':'cosas'} y cumplí ${doneN}`:`Nos propusimos ${totN} ${totN===1?'cosa':'cosas'} y cumplimos ${doneN}`):'Una semana para respirar';
+    const fs=famStreakAt(d,wk);
+    M.sub=w&&w.famMet?'🏮 Meta familiar cumplida'+(fs>=2?` · ${fs} semanas seguidas`:''):(closed&&totN?'🌄 La montaña sigue ahí. Volvemos el lunes.':(!closed?'Semana en curso':''));
+    const sr=sealedRunAt(d,wk);
+    M.pride=sr>=1?`📿 ${sr} ${sr===1?'domingo':'domingos seguidos'} de Reunión Familiar`:'';
+    M.cats=Object.entries(cats).sort((x,y)=>y[1]-x[1]).map(([c])=>c);
+    M.method=solo?'Solo cuenta lo planificado con antelación':'Solo cuenta lo planificado con antelación · reunión cada domingo';
+    if(w&&w.sealed)M.seal={label:'Sellada · '+fmtDate(addDays(wk,6)),att:(w.sealAtt||[]).map(id=>d.members.get(id)).filter(m=>m&&!m.postalOptOut).map(m=>m.emoji)};
+  }else if(p.kind==='meta'){
+    const g=d.goals.get(p.gid);if(!g)return null;
+    const owner=d.members.get(g.m),minor=isMinor(d,owner),cat=CATS[g.f.area]||CATS.otro;if(!owner||owner.postalOptOut||g.honorClosed)return null;
+    const framed=minor&&!(p.audience==='cercana'&&p.names);
+    M.minorFramed=framed;M.consentNeeded=minor;
+    M.date=fmtLong(dkey(new Date(g.completedT||d.now)));
+    const weeks=Math.max(1,Math.round(((g.completedT||d.now)-g.createdT)/(7*864e5)));
+    const acts=[...d.acts.values()].filter(a=>a.goalId===g.gid&&a.done&&!a.voided).length;
+    let sund=0;for(const k of d.weekKeys){const w=d.weeks.get(k);if(w&&w.sealed&&weekCloseTs(k)>=g.createdT&&weekCloseTs(k)<=(g.completedT||d.now))sund++}
+    M.proof=[`${weeks} ${weeks===1?'semana':'semanas'}`,acts?`${acts} ${acts===1?'actividad':'actividades'}`:'',sund?`${sund} ${sund===1?'domingo':'domingos'} de revisión`:''].filter(Boolean).join(' · ');
+    if(framed){M.eyebrow='En casa celebramos';M.hero=`🏆 ${owner.emoji} cumplió su meta de ${cat.n.toLowerCase()}`;M.body='';M.author=''}
+    else{M.eyebrow='Meta cumplida';M.hero=`🏆 ${g.f.objetivo||cat.n}`;M.body=(p.smartFull&&!minor)?String(g.f.smartFinal||''):'';
+      M.author=nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;
+      if(!M.sentence&&g.f.identidad&&(!minor||p.audience==='cercana'))M.sentence=String(g.f.identidad).slice(0,120)}
+    M.cats=[g.f.area];M.method=cat.e+' '+cat.n;
+  }else if(p.kind==='racha'){
+    const owner=d.members.get(p.m)||by;if(!owner||owner.postalOptOut)return null;
+    const minor=isMinor(d,owner),days=+p.days||0,ms=[...CONFIG.STREAK_MS].reverse().find(x=>days>=x.d)||CONFIG.STREAK_MS[2];
+    M.consentNeeded=minor;M.minorFramed=minor;M.date=fmtLong(d.todayK);
+    M.eyebrow=minor?'En casa celebramos':'Racha';
+    M.hero=minor?`${ms.e} ${owner.emoji} lleva ${days} días seguidos cumpliendo lo planificado`:`${ms.e} ${days} días seguidos cumpliendo lo planificado`;
+    M.sub='y contando';M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;
+    M.method='Cada día cuenta si cumplo algo planificado con antelación';
+  }else if(p.kind==='insignia'){
+    const b=BADGES.find(x=>x.id===p.badge),owner=d.members.get(p.m)||by;if(!b||!owner||owner.postalOptOut)return null;
+    const minor=isMinor(d,owner);
+    M.consentNeeded=minor;M.minorFramed=minor;M.date=fmtLong(d.todayK);
+    M.eyebrow=minor?'En casa celebramos':'Insignia · '+RARITY[b.r].n;
+    M.hero=minor?`${b.e} ${owner.emoji} ganó la insignia ${b.n}`:`${b.e} ${b.n}`;M.sub=b.d;
+    M.author=minor?'':nameOf(owner);M.authorEmoji=owner.emoji;M.authorColor=owner.color;
+  }else if(p.kind==='relato'){
+    M.eyebrow='Nuestra historia';M.date=fmtLong(d.todayK);M.author=nameOf(by);
+    M.hero='';M.method='Lo que de verdad nos pasó, en tres frases';
+  }else if(p.kind==='temporada'){
+    const si=+p.season||0,ks=d.weekKeys.filter((k,i)=>Math.floor(i/CONFIG.SEASON_WEEKS)===si&&d.weeks.get(k)&&d.weeks.get(k).closed);
+    if(!ks.length)return null;
+    M.eyebrow=`Carta de temporada ${si+1}`;{const a=fromKey(ks[0]),b=fromKey(addDays(ks[ks.length-1],6));M.date=a.getMonth()===b.getMonth()?`${a.getDate()}–${b.getDate()} de ${MESES[b.getMonth()]}`:`${a.getDate()} ${MESES[a.getMonth()].slice(0,3)} – ${b.getDate()} ${MESES[b.getMonth()].slice(0,3)}`}
+    const sealed=ks.filter(k=>d.weeks.get(k).sealed).length;
+    let acts=0;for(const a of d.acts.values())if(a.done&&!a.voided&&ks.includes(monday(a.date)))acts++;
+    const goals=[...d.goals.values()].filter(g=>!g.deleted&&g.completedT&&!g.honorClosed&&ks.includes(monday(dkey(new Date(g.completedT))))).length;
+    M.hero=solo?`${ks.length} domingos de camino`:`${ks.length} domingos en familia`;
+    M.proof=[sealed?`${sealed} ${sealed===1?'sellado':'sellados'}`:'',`${acts} ${acts===1?'actividad':'actividades'}`,goals?`${goals} ${goals===1?'meta cumplida':'metas cumplidas'}`:''].filter(Boolean).join(' · ');
+    const cats={};for(const a of d.acts.values())if(a.done&&!a.voided&&ks.includes(monday(a.date)))cats[a.cat]=(cats[a.cat]||0)+1;
+    M.cats=Object.entries(cats).sort((x,y)=>y[1]-x[1]).map(([c])=>c);
+    const sc={};for(const q of d.postales)if(q.sentence&&q.wk&&ks.includes(q.wk))sc[q.sentence]=(sc[q.sentence]||0)+1;
+    const best=Object.entries(sc).sort((x,y)=>y[1]-x[1])[0];if(best&&!M.sentence)M.sentence=best[0];
+    const fs=Math.max(0,...ks.map(k=>famStreakAt(d,k)));M.pride=fs>=2?`🏮 Mejor racha familiar: ${fs} semanas`:'';
+    M.method='Una temporada = 13 semanas · reunión cada domingo';
+  }
+  return M;
+}
+const refLine=pct=>CONFIG.REFERRAL.twoSided?`si lo usas al suscribirte, las dos familias reciben un ${pct}% de descuento.`:`si lo usas al suscribirte, la familia que te invitó recibe un ${pct}% de descuento.`;
+function captionOf(M){
+  const L=[],km=kindOk(M.kind)?KIND_META[M.kind]:KIND_META.semana;
+  if(M.dedic)L.push(`Para ${M.dedic}, con cariño 💛`);
+  L.push(`${km.e} ${M.kind==='semana'?'Postal de la semana':M.kind==='relato'?'Nuestra historia':M.kind==='temporada'?M.eyebrow:M.eyebrow} · ${M.title}`);
+  if(M.date)L.push((M.kind==='semana'?`Semana del ${M.date}`:M.date)+(M.tenure?` · ${M.tenure}`:''));
+  if(M.hero)L.push(M.hero);
+  if(M.sub)L.push(M.sub);
+  if(M.proof)L.push(M.proof);
+  if(M.pride)L.push(M.pride);
+  if(M.body)L.push(`«${M.body}»`);
+  const ml=M.members.filter(r=>r.line&&(r.name||true)).map(r=>`${r.emoji}${r.name?' '+r.name:''}: ${r.line}`);
+  if(ml.length&&M.kind==='semana')L.push(ml.join(' · '));
+  if(M.sentence)L.push(`«${M.sentence}»`);
+  for(const[k,lab]of WORDS_Q)if(M.words[k])L.push(`${lab}: ${M.words[k]}`);
+  if(M.author&&M.kind!=='semana')L.push(`— ${M.author}`);
+  if(M.seal)L.push(`📿 ${M.seal.label}${M.seal.att.length?' · '+M.seal.att.join(''):''}`);
+  L.push(`🌱 ${M.brand} · ${M.tag}${M.code?`\nCódigo de regalo ${M.code}: ${refLine(M.pct)}`:''}`);
+  return L.join('\n').slice(0,900);
+}
+/* ---- lienzo (paleta fija de papel; nunca variables CSS ni tema oscuro) ---- */
+const PC={ground:'#EFF1EA',surface:'#FBFCF8',ink:'#26332C',ink2:'#5C6A61',ink3:'#8B978D',line:'#DEE3D6',verde:'#33684B',verdeInk:'#2A5740',wash:'#EAF1E7',kin:'#A87E1C',kinB:'#D9A62E',kinW:'#FAF4E3'};
+const EMOJI_FB=',"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+const FD=(w,px)=>`${w} ${px}px "Zen Maru Gothic","Hiragino Maru Gothic ProN",ui-rounded,system-ui${EMOJI_FB}`;
+const FB=(w,px)=>`${w} ${px}px Karla,ui-sans-serif,system-ui,-apple-system${EMOJI_FB}`;
+let POSTAL_ASSETS=null,LOGO_EL=null;
+function postalAssets(){
+  if(!POSTAL_ASSETS){
+    const fl=(document.fonts&&document.fonts.load)?[FD(900,60),FD(700,40),FB(500,34),FB(700,34),FB(400,34)].map(f=>document.fonts.load(f,'áéíóúñ¿¡').catch(()=>{})):[];
+    const lg=new Promise(res=>{if(LOGO_EL)return res(LOGO_EL);const im=new Image();im.onload=()=>{LOGO_EL=im;res(im)};im.onerror=()=>res(null);im.src=LOGO_IMG});
+    const to=new Promise(res=>setTimeout(res,1500));
+    POSTAL_ASSETS=Promise.race([Promise.all([lg,...fl]),to]).then(()=>LOGO_EL);
+  }
+  return POSTAL_ASSETS;
+}
+function hexA(h,a){const n=parseInt(String(h||'#33684B').slice(1),16)||0;return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
+function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+const graphemes=s=>{try{return [...new Intl.Segmenter('es',{granularity:'grapheme'}).segment(s)].map(x=>x.segment)}catch(e){return Array.from(s)}};
+function wrapLines(ctx,text,maxW,maxLines){
+  const out=[];
+  for(const para of String(text||'').split(/\r?\n/)){
+    let line='';const words=para.split(/\s+/).filter(Boolean);
+    if(!words.length){out.push('');continue}
+    for(const w of words){
+      const t=line?line+' '+w:w;
+      if(ctx.measureText(t).width<=maxW){line=t;continue}
+      if(line)out.push(line);
+      if(ctx.measureText(w).width>maxW){let cur='';for(const g of graphemes(w)){if(ctx.measureText(cur+g).width>maxW&&cur){out.push(cur);cur=g}else cur+=g}line=cur}
+      else line=w;
+    }
+    out.push(line);
+  }
+  if(maxLines&&out.length>maxLines){const cut=out.slice(0,maxLines);let last=cut[maxLines-1];while(last&&ctx.measureText(last+'…').width>maxW)last=last.slice(0,-1).trimEnd();cut[maxLines-1]=last+'…';return cut}
+  return out;
+}
+function drawWrapped(ctx,text,x,y,maxW,lh,maxLines,align='left'){
+  const lines=wrapLines(ctx,text,maxW,maxLines);
+  ctx.textAlign=align;const ax=align==='center'?x+maxW/2:x;
+  for(const l of lines){ctx.fillText(l,ax,y);y+=lh}
+  ctx.textAlign='left';return y;
+}
+function drawAvatar(ctx,cx,cy,r,emoji,color){
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=hexA(color,.16);ctx.fill();
+  ctx.lineWidth=Math.max(3,r*.11);ctx.strokeStyle=color||PC.verde;ctx.stroke();
+  ctx.font=FB(400,Math.round(r*1.05));ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=PC.ink;
+  ctx.fillText(emoji||'?',cx,cy+r*.06);ctx.textBaseline='alphabetic';ctx.textAlign='left';
+}
+function drawSeal(ctx,cx,cy,r,seal){
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(-.18);
+  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.strokeStyle=hexA(PC.kin,.85);ctx.lineWidth=5;ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,r-11,0,Math.PI*2);ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle=PC.kin;ctx.textAlign='center';ctx.font=FD(900,26);ctx.fillText('📿 SELLADA',0,-6);
+  ctx.font=FB(700,20);ctx.fillText(seal.label.replace(/^Sellada · /,''),0,20);
+  if(seal.att.length){ctx.font=FB(400,22);ctx.fillText(seal.att.slice(0,6).join(''),0,48)}
+  ctx.restore();ctx.textAlign='left';
+}
+function drawWords(ctx,M,L,y,CW,maxY,big){
+  for(const[k,lab]of WORDS_Q){
+    const t=M.words[k];if(!t)continue;
+    if(y+90>maxY)break;
+    ctx.fillStyle=PC.ink3;ctx.font=FB(700,big?23:21);ctx.fillText(lab.toUpperCase(),L,y+24);
+    ctx.fillStyle=PC.ink;ctx.font=FB(500,big?34:29);
+    const lh=big?44:37,room=Math.max(1,Math.floor((maxY-y-40)/lh));
+    y=drawWrapped(ctx,t,L,y+62,CW,lh,Math.min(big?5:3,room))+14;
+  }
+  return y;
+}
+async function drawPostal(M){
+  const logo=await postalAssets();
+  const W=SHARE.W,H=SHARE.H,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle=PC.ground;ctx.fillRect(0,0,W,H);
+  const g1=ctx.createRadialGradient(W*.85,H*.1,40,W*.85,H*.1,700);g1.addColorStop(0,hexA(PC.kinB,.2));g1.addColorStop(1,hexA(PC.kinB,0));ctx.fillStyle=g1;ctx.fillRect(0,0,W,H);
+  const g2=ctx.createRadialGradient(W*.1,H*.92,40,W*.1,H*.92,760);g2.addColorStop(0,hexA('#6E9C6B',.24));g2.addColorStop(1,hexA('#6E9C6B',0));ctx.fillStyle=g2;ctx.fillRect(0,0,W,H);
+  const P=56,PX=P,PY=P,PW=W-2*P,PH=H-2*P,R=44;
+  ctx.save();ctx.shadowColor='rgba(38,51,44,.18)';ctx.shadowBlur=60;ctx.shadowOffsetY=24;rrect(ctx,PX,PY,PW,PH,R);ctx.fillStyle=PC.surface;ctx.fill();ctx.restore();
+  ctx.save();rrect(ctx,PX,PY,PW,PH,R);ctx.clip();
+  const L=PX+64,CW=PW-128;let y=PY+70;
+  const footerH=104,footerY=PY+PH-footerH,maxY=footerY-36;
+  // cabecera
+  if(logo){try{ctx.drawImage(logo,L,y-6,64,64)}catch(e){}}
+  const lx=L+(logo?82:0);
+  ctx.fillStyle=PC.ink3;ctx.font=FB(700,24);ctx.fillText(M.eyebrow.toUpperCase(),lx,y+20);
+  ctx.fillStyle=PC.ink;ctx.font=FD(900,36);ctx.fillText(M.brand,lx,y+58);
+  ctx.textAlign='right';ctx.fillStyle=PC.ink2;ctx.font=FB(500,26);ctx.fillText(wrapLines(ctx,M.date,CW*.55,1)[0],L+CW,y+26);
+  if(M.tenure){ctx.fillStyle=PC.ink3;ctx.font=FB(500,23);ctx.fillText(M.tenure,L+CW,y+58)}ctx.textAlign='left';
+  y+=118;ctx.fillStyle=PC.line;ctx.fillRect(L,y,CW,2);y+=46;
+  if(M.dedic){ctx.fillStyle=PC.kin;ctx.font=FD(700,30);y=drawWrapped(ctx,`Para ${M.dedic}, con cariño 💛`,L,y+22,CW,36,2)+10}
+  if(M.kind==='semana'||M.kind==='temporada'){
+    ctx.fillStyle=PC.ink;ctx.font=FD(900,54);y=drawWrapped(ctx,M.title,L,y+34,CW,60,2)-60+8;
+    y+=34;
+    ctx.fillStyle=PC.verdeInk;ctx.font=FD(900,42);y=drawWrapped(ctx,M.hero,L,y+28,CW,52,3)+2;
+    if(M.sub){ctx.fillStyle=PC.ink;ctx.font=FB(700,30);y=drawWrapped(ctx,M.sub,L,y+22,CW,38,2)}
+    if(M.proof){ctx.fillStyle=PC.ink2;ctx.font=FB(500,29);y=drawWrapped(ctx,M.proof,L,y+22,CW,36,2)}
+    if(M.pride){ctx.fillStyle=PC.kin;ctx.font=FB(700,29);y=drawWrapped(ctx,M.pride,L,y+22,CW,36,2)}
+    if(M.cats.length){ctx.font=FB(400,32);const es=M.cats.slice(0,8).map(c=>CATS[c].e).join(' ');ctx.fillStyle=PC.ink;ctx.fillText(es,L,y+36);
+      const ew=ctx.measureText(es).width;if(M.cats.length>=2){ctx.fillStyle=PC.ink3;ctx.font=FB(600,25);ctx.fillText(`· ${M.cats.length} áreas de vida`,L+ew+14,y+34)}y+=56}
+    y+=14;
+    // reserva de espacio para la frase, las palabras y el pie de método
+    ctx.font=FD(700,34);const sentH=M.sentence?(wrapLines(ctx,M.sentence,CW-52,3).length*44+36):0;
+    const nW=Object.keys(M.words).length,wordsH=nW?nW*112:0;
+    const room=maxY-64-sentH-wordsH-y;
+    const rows=M.members.slice(0,8),withLines=rows.some(r=>r.line);
+    if(rows.length&&room>60){
+      if(withLines&&rows.length<=3&&room>=rows.length*92){
+        const rh=92,ar=34;
+        for(const r of rows){drawAvatar(ctx,L+ar+4,y+rh/2-4,ar,r.emoji,r.color);const tx=L+2*ar+32;
+          if(r.name){ctx.fillStyle=PC.ink;ctx.font=FD(700,30);ctx.fillText(wrapLines(ctx,r.name,CW-2*ar-40,1)[0],tx,y+rh/2-6);ctx.fillStyle=PC.ink2;ctx.font=FB(500,26);ctx.fillText(wrapLines(ctx,r.line,CW-2*ar-40,1)[0],tx,y+rh/2+28)}
+          else{ctx.fillStyle=PC.ink;ctx.font=FB(700,28);ctx.fillText(wrapLines(ctx,r.line,CW-2*ar-40,1)[0],tx,y+rh/2+8)}
+          y+=rh}
+      }else if(withLines){
+        const cw=CW/2,ch=72,ar=25,tw=cw-2*ar-40;let drawn=0;
+        rows.forEach((r,i)=>{const col=i%2,row=Math.floor(i/2),x=L+col*cw,yy=y+row*ch;if(yy+ch>y+room)return;drawn=row+1;
+          drawAvatar(ctx,x+ar+2,yy+ch/2-3,ar,r.emoji,r.color);const tx=x+2*ar+20;
+          if(r.name){ctx.fillStyle=PC.ink;ctx.font=FD(700,26);ctx.fillText(wrapLines(ctx,r.name,tw,1)[0],tx,yy+ch/2-5);ctx.fillStyle=PC.ink2;ctx.font=FB(500,23);ctx.fillText(wrapLines(ctx,r.line,tw,1)[0],tx,yy+ch/2+23)}
+          else{ctx.fillStyle=PC.ink;ctx.font=FB(700,25);ctx.fillText(wrapLines(ctx,r.line,tw,1)[0],tx,yy+ch/2+8)}});
+        y+=drawn*ch;
+      }else{
+        let cx=L+32;const hasN=rows.some(r=>r.name);
+        for(const r of rows){if(cx+34>L+CW)break;drawAvatar(ctx,cx,y+32,30,r.emoji,r.color);
+          if(r.name){ctx.fillStyle=PC.ink2;ctx.font=FB(600,19);ctx.textAlign='center';ctx.fillText(wrapLines(ctx,r.name,88,1)[0],cx,y+88);ctx.textAlign='left'}cx+=96}
+        y+=hasN?104:76;
+      }
+    }
+    y+=12;
+    if(M.sentence){ctx.fillStyle=PC.kin;ctx.font=FD(900,70);ctx.fillText('“',L-4,y+50);ctx.fillStyle=PC.ink;ctx.font=FD(700,34);y=drawWrapped(ctx,M.sentence,L+52,y+42,CW-52,44,3)+2}
+    if(nW)y=drawWords(ctx,M,L,y+8,CW,maxY-60,false);
+    if(M.method){ctx.fillStyle=PC.ink3;ctx.font=FB(500,23);drawWrapped(ctx,M.method,L,maxY-54,M.seal?CW-230:CW,26,2)}
+    if(M.seal)drawSeal(ctx,L+CW-96,footerY-118,86,M.seal);
+  }else if(M.kind==='relato'){
+    ctx.fillStyle=PC.kin;ctx.font=FD(900,150);ctx.fillText('“',L-6,y+96);
+    ctx.fillStyle=PC.ink;ctx.font=FD(900,50);y=drawWrapped(ctx,M.title,L+100,y+72,CW-100,58,2)-58+18;
+    ctx.fillStyle=PC.verdeInk;ctx.font=FB(500,29);ctx.fillText('nuestra historia',L+100,y+40);y+=104;
+    y=drawWords(ctx,M,L,y,CW,maxY-150,true);
+    if(M.sentence&&y+110<maxY-120){ctx.fillStyle=PC.ink;ctx.font=FD(700,34);y=drawWrapped(ctx,'«'+M.sentence+'»',L,y+40,CW,44,3)+6}
+    const ay=Math.min(Math.max(y+30,y),maxY-100);
+    drawAvatar(ctx,L+36,ay+36,36,M.authorEmoji,M.authorColor);
+    ctx.fillStyle=PC.ink;ctx.font=FD(700,30);ctx.fillText(M.author||M.title,L+96,ay+46);
+    ctx.fillStyle=PC.ink3;ctx.font=FB(500,24);ctx.fillText(M.date,L+96,ay+78);
+  }else{ // meta · racha · insignia
+    const e=(M.hero.match(/^\S+/)||[''])[0],rest=M.hero.slice(e.length).trim();
+    ctx.font=FB(400,150);ctx.textAlign='center';ctx.fillStyle=PC.ink;ctx.fillText(e,L+CW/2,y+130);ctx.textAlign='left';y+=176;
+    ctx.fillStyle=PC.ink;ctx.font=FD(900,52);y=drawWrapped(ctx,rest,L,y+40,CW,62,3,'center')+4;
+    if(M.sub){ctx.fillStyle=PC.ink2;ctx.font=FB(500,31);y=drawWrapped(ctx,M.sub,L,y+26,CW,40,3,'center')+4}
+    if(M.proof){ctx.fillStyle=PC.verdeInk;ctx.font=FB(700,30);y=drawWrapped(ctx,M.proof,L,y+26,CW,38,2,'center')+4}
+    if(M.body){ctx.fillStyle=PC.ink2;ctx.font=FB(400,28);y=drawWrapped(ctx,'«'+M.body+'»',L,y+26,CW,36,5,'center')+4}
+    if(M.sentence){rrect(ctx,L,y+16,CW,96,22);ctx.fillStyle=PC.kinW;ctx.fill();ctx.fillStyle=PC.kin;ctx.font=FD(700,30);drawWrapped(ctx,'🌱 '+M.sentence,L+24,y+60,CW-48,38,2,'center');y+=130}
+    y+=36;
+    drawAvatar(ctx,L+CW/2,y+40,40,M.authorEmoji,M.authorColor);
+    ctx.textAlign='center';ctx.fillStyle=PC.ink;ctx.font=FD(700,32);ctx.fillText((M.author?M.author+' · ':'')+M.title,L+CW/2,y+126);
+    ctx.fillStyle=PC.ink3;ctx.font=FB(500,25);ctx.fillText(M.date,L+CW/2,y+160);ctx.textAlign='left';y+=196;
+    if(Object.keys(M.words).length)y=drawWords(ctx,M,L,y,CW,maxY-40,false);
+    if(M.method&&y+40<maxY-30){ctx.textAlign='center';ctx.fillStyle=PC.ink3;ctx.font=FB(500,24);ctx.fillText(M.method,L+CW/2,maxY-50);ctx.textAlign='left'}
+  }
+  // pie de marca
+  ctx.fillStyle=PC.verde;ctx.fillRect(PX,footerY,PW,footerH);
+  ctx.fillStyle='#fff';ctx.font=FD(900,34);ctx.fillText(`${M.brand} 🌱`,L,footerY+48);
+  ctx.fillStyle='rgba(255,255,255,.82)';ctx.font=FB(500,24);ctx.fillText(M.tag,L,footerY+82);
+  if(M.code){ctx.textAlign='right';ctx.fillStyle='rgba(255,255,255,.85)';ctx.font=FB(500,24);ctx.fillText(CONFIG.REFERRAL.twoSided?`Código de regalo · ${M.pct}% para las dos familias`:`Código de regalo · ${M.pct}% de descuento`,L+CW,footerY+40);
+    ctx.fillStyle='#fff';ctx.font=FD(900,38);ctx.fillText(M.code,L+CW,footerY+84);ctx.textAlign='left'}
+  ctx.restore();
+  return cv;
+}
+/* ---- render en caché + envío (Web Share) — estado por <img> destino, nunca global ---- */
+async function postalRender(M,img,statusEl){
+  const rec=img._postal||(img._postal={ver:0,blob:null,file:null,url:null});
+  const v=++rec.ver;rec.blob=null;rec.file=null;
+  try{
+    const cv=await drawPostal(M);
+    if(v!==rec.ver||!img.isConnected)return;
+    const blob=await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('toBlob')),'image/png'));
+    if(v!==rec.ver||!img.isConnected)return;
+    const url=URL.createObjectURL(blob),old=rec.url;
+    rec.blob=blob;rec.url=url;rec.file=(typeof File==='function')?new File([blob],'postal-familia-zen.png',{type:'image/png',lastModified:Date.now()}):null;
+    img.src=url;img.hidden=false;
+    if(old){setTimeout(()=>{try{URL.revokeObjectURL(old)}catch(e){}},1500)}
+    if(statusEl)statusEl.hidden=true;
+  }catch(e){if(statusEl){statusEl.hidden=false;statusEl.textContent='No se pudo dibujar la imagen en este navegador; el texto sí se puede copiar.'}}
+}
+const isIosStandalone=()=>(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))&&(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
+function copyTextSync(t){
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).catch(()=>{});return true}}catch(e){}
+  try{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.focus();ta.setSelectionRange(0,t.length);const ok=document.execCommand('copy');ta.remove();return ok}catch(e){return false}
+}
+function postalDownload(rec){
+  if(rec&&rec.blob&&rec.url&&!isIosStandalone()){try{const a=document.createElement('a');a.href=rec.url;a.download='postal-familia-zen.png';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),2000);return true}catch(e){}}
+  return false;
+}
+/* Se llama SIN await previo dentro del gesto del usuario (iOS exige activación transitoria).
+   Devuelve: 'shared' (imagen+texto) · 'text' (solo texto; la imagen se descargó o queda en la vista previa) · 'download' · 'copied' · 'abort' */
+function postalSend(rec,text,title){
+  copyTextSync(text);
+  const f=rec&&rec.file;
+  if(f&&navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
+    return navigator.share({files:[f],title,text}).then(()=>'shared').catch(e=>e&&e.name==='AbortError'?'abort':(postalDownload(rec)?'download':'copied'));
+  }
+  const dl=postalDownload(rec);
+  if(navigator.share)return navigator.share({title,text}).then(()=>'text').catch(e=>e&&e.name==='AbortError'?'abort':(dl?'download':'copied'));
+  return Promise.resolve(dl?'download':'copied');
+}
+/* ---- hoja de compartir (contextual: se abre ya configurada para el momento) ---- */
+let POSTAL_DRAFT={};
+const DRAFT_KEYS=['audience','names','code','sentence','dedic','words','smartFull','consent'];
+function sharePostal(init={}){
+  const d=D(),m=me();if(!m||!d.fam)return;
+  if(document.querySelector('#modal-root #ps-img'))return;
+  const kind=kindOk(init.kind)?init.kind:'semana';
+  if(kind==='semana'&&!init.wk)return toast('La primera postal se prepara el domingo al cerrar la semana (18:00)');
+  const adult=isAdult(d,m),live=CONFIG.REFERRAL.live;
+  const pol=Object.assign({audience:'cercana',names:true},d.fam.postal||{});
+  const owner=init.m||m.id;
+  const dk=kind+':'+(init.wk||init.gid||init.badge||init.days||init.season||'')+':'+owner;
+  const prev=POSTAL_DRAFT[dk]||{},keep={};for(const k of DRAFT_KEYS)if(k in prev)keep[k]=prev[k];
+  const st=Object.assign({kind,wk:init.wk||null,gid:init.gid||null,m:owner,days:init.days||0,badge:init.badge||null,season:init.season||0,
+    audience:pol.audience,names:pol.names,code:live,sentence:null,dedic:'',words:{f1:'',f2:'',f3:''},smartFull:false,consent:false,by:m.id},
+    keep,init.sentence?{sentence:init.sentence}:{},init.dedic?{dedic:init.dedic}:{},init.words?{words:Object.assign({f1:'',f2:'',f3:''},init.words)}:{});
+  POSTAL_DRAFT[dk]=st;
+  let chips=sentenceChips(d,st.wk||lastClosedWeek(d));
+  if(kind==='temporada'){const ks=d.weekKeys.filter((k,i)=>Math.floor(i/CONFIG.SEASON_WEEKS)===st.season);const sc={};for(const q of d.postales)if(q.sentence&&q.wk&&ks.includes(q.wk))sc[q.sentence]=(sc[q.sentence]||0)+1;const best=Object.entries(sc).sort((x,y)=>y[1]-x[1])[0];if(best)chips=[best[0],...chips.filter(c=>c!==best[0])].slice(0,4)}
+  if(st.sentence==null)st.sentence=(kind==='semana'||kind==='temporada')?(chips[0]||''):'';
+  const km=KIND_META[kind];
+  const mb=modal(`<div class="row between"><h3>${km.e} ${km.t}</h3><button class="chip" id="ps-close" aria-label="Cerrar">✕</button></div>
+    <div class="viewtoggle" id="ps-aud" style="width:100%;margin-top:10px"><button data-aud="cercana" style="flex:1">👨‍👩‍👧 Familia cercana</button><button data-aud="publico" style="flex:1">🌍 Público</button></div>
+    <p class="tiny muted" id="ps-audnote" style="margin:6px 0 0"></p>
+    <div class="postal-prev"><img id="ps-img" alt="Vista previa de la postal" hidden><div id="ps-status" class="tiny muted">Dibujando la postal…</div></div>
+    <div id="ps-chips" class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px"></div>
+    <div id="ps-ctl"></div>
+    <details class="zen" id="ps-words" style="margin-top:10px" ${kind==='relato'?'open':''}><summary>✍️ ${kind==='relato'?'Nuestra historia en tres frases':'Añadir unas palabras'}</summary><div class="inner">
+      <p class="tiny muted" style="margin:0 0 4px">Lo que de verdad pasó. Sin datos de salud ni nombres de otras personas. Lo vacío no sale.</p>
+      ${WORDS_Q.map(([k,l,ph])=>`<label class="field" style="margin-top:8px"><span class="lab">${l}</span><textarea data-w="${k}" rows="2" maxlength="240" placeholder="${esc(ph)}">${esc(st.words[k]||'')}</textarea></label>`).join('')}
+      <div id="ps-seeds" class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    </div></details>
+    <div id="ps-opts" class="vgap" style="margin-top:10px;gap:6px"></div>
+    <div class="sheet-actions">
+      ${adult?`<button class="btn big gold" id="ps-send">📮 Enviar la postal</button>
+      <div class="row" style="gap:8px;margin-top:8px"><button class="btn small sec grow" id="ps-copy">📋 Copiar texto</button><button class="btn small ghost grow" id="ps-save">Guardar en el álbum</button></div>`
+      :`<button class="btn big" id="ps-save">Guardar en el álbum 📮</button><p class="tiny muted" style="margin:8px 0 0;text-align:center">Enviar fuera de la familia lo hace un adulto desde su teléfono.</p>`}
+      <p class="tiny muted" id="ps-hint" style="margin:8px 0 0;text-align:center">La postal nunca lleva el enlace de la app ni la clave de acceso de la familia.</p>
+    </div>`,()=>close());
+  mb.classList.add('sticky');
+  const img=$('#ps-img',mb),status=$('#ps-status',mb),ctl=$('#ps-ctl',mb);
+  let M=null,text='',tm=null,dirty=false,changed=false,closed=false;
+  const close=()=>{if(closed)return;closed=true;clearTimeout(tm);mb.remove();if(img._postal&&img._postal.url){const u=img._postal.url;setTimeout(()=>{try{URL.revokeObjectURL(u)}catch(e){}},1500)}if(changed)rerender();if(changed&&MEET)renderMeeting()};
+  const refresh=()=>{M=postalModel(d,st);if(!M){close();toast('No se pudo preparar esa postal');return false}text=captionOf(M);return true};
+  const schedule=ms=>{dirty=true;if(img._postal){img._postal.ver++;img._postal.file=null;img._postal.blob=null}clearTimeout(tm);tm=setTimeout(()=>{dirty=false;if(refresh())postalRender(M,img,status)},ms)};
+  const build=(now)=>{if(!refresh())return;paintOpts();schedule(now?0:150)};
+  const paintAud=()=>{
+    $$('#ps-aud button',mb).forEach(b=>b.classList.toggle('on',b.dataset.aud===st.audience));
+    $('#ps-audnote',mb).textContent=st.audience==='publico'?'Público: los menores salen solo con su avatar, sin nombre. Piensa en redes o grupos grandes.':'Familia cercana: abuelos, tíos, el grupo de la familia. Nombres visibles si quieres.';
+  };
+  const paintChips=()=>{
+    const cc=$('#ps-chips',mb);
+    if(kind==='relato'){cc.innerHTML='';return}
+    cc.innerHTML=`<span class="tiny muted" style="width:100%">${kind==='semana'?'Una frase que sea verdad esta semana:':'Una frase que sea verdad:'}</span>`+chips.map(c=>`<button class="chip pchip ${st.sentence===c?'on':''}" data-s="${esc(c)}">${esc(c)}</button>`).join('')+`<button class="chip pchip ${st.sentence&&!chips.includes(st.sentence)?'on':''}" data-s="__custom">✍️ Otra…</button>`;
+    $$('[data-s]',cc).forEach(b=>b.onclick=()=>{
+      if(b.dataset.s==='__custom'){const v=prompt('Tu frase (una línea):',chips.includes(st.sentence)?'':st.sentence);if(v==null)return;st.sentence=v.trim().slice(0,120)}
+      else st.sentence=(st.sentence===b.dataset.s)?'':b.dataset.s;
+      paintChips();build()});
+  };
+  const paintOpts=()=>{
+    const o=$('#ps-opts',mb),pub=st.audience==='publico',subj=d.members.get(st.m)||m;
+    o.innerHTML=`<label class="row between small"><span>${pub?'Nombres de los adultos':'Nombres de la familia'} <span class="tiny muted">(si no, solo avatares)</span></span><input type="checkbox" data-o="names" ${st.names?'checked':''} style="width:auto"></label>
+      ${pub?`<label class="row between small"><span>Código de regalo <b>${esc(refCodeOf(d.fam))}</b> <span class="tiny muted">(${CONFIG.REFERRAL.pct}%${live?'':' · se activa con la App Store'})</span></span><input type="checkbox" data-o="code" ${(st.code&&live)?'checked':''} ${live?'':'disabled'} style="width:auto"></label>`:''}
+      ${(kind==='meta'&&M&&!M.minorFramed&&!M.consentNeeded)?`<label class="row between small"><span>Frase SMART completa <span class="tiny muted">(puede llevar datos personales)</span></span><input type="checkbox" data-o="smartFull" ${st.smartFull?'checked':''} style="width:auto"></label>`:''}
+      ${(M&&M.consentNeeded)?`<label class="row small" style="gap:8px;padding:8px 10px;border-radius:10px;background:var(--kin-wash)"><input type="checkbox" data-o="consent" ${st.consent?'checked':''} style="width:auto"><span>Le pregunté a ${esc(subj.emoji)} ${esc(subj.name)} y está de acuerdo en que se comparta 💛</span></label>`:''}
+      <label class="field" style="margin-top:6px"><span class="lab">Dedicatoria <span class="muted">(opcional)</span></span><input data-o="dedic" maxlength="60" placeholder="Ej. abuela Carmen" value="${esc(st.dedic)}"></label>`;
+    $$('[data-o]',o).forEach(i=>i.oninput=()=>{const k=i.dataset.o;if(i.type==='checkbox')st[k]=i.checked;else st[k]=i.value;if(k==='dedic')schedule(350);else build()});
+  };
+  const paintSeeds=()=>{
+    const sd=$('#ps-seeds',mb);const ws=st.wk||lastClosedWeek(d);
+    const seeds=[];const pm=d.perM.get(m.id);
+    if(pm&&pm.dayStreak>=3)seeds.push(['f1',`Cumplir algo pequeño cada día: llevamos ${pm.dayStreak} días seguidos`]);
+    if(ws&&d.weeks.get(ws)&&d.weeks.get(ws).famMet)seeds.push(['f2',`Cumplimos la meta familiar de la semana del ${weekLabel(ws)}`]);
+    const gd=[...d.goals.values()].filter(g=>!g.deleted&&g.completedT&&!g.honorClosed).length;if(gd)seeds.push(['f2',`${gd} ${gd===1?'meta SMART cumplida':'metas SMART cumplidas'} hasta hoy`]);
+    seeds.push(['f3','Empiecen con una sola actividad Semilla por persona']);
+    sd.innerHTML=seeds.length?`<span class="tiny muted" style="width:100%">Toca para usar una idea (puedes editarla):</span>`+seeds.map(([k,t])=>`<button class="chip pchip" data-seed="${k}" data-t="${esc(t)}">+ ${esc(t.length>38?t.slice(0,36)+'…':t)}</button>`).join(''):'';
+    $$('[data-seed]',sd).forEach(b=>b.onclick=()=>{const k=b.dataset.seed;const ta=$(`[data-w=${k}]`,mb);if(ta&&!ta.value.trim()){ta.value=b.dataset.t;st.words[k]=b.dataset.t;build()}else toast('Ese campo ya tiene texto')});
+  };
+  $$('#ps-aud button',mb).forEach(b=>b.onclick=()=>{st.audience=b.dataset.aud;st.names=(st.audience===pol.audience)?pol.names:(st.audience==='publico'?false:true);if(st.audience!=='publico')st.code=false;paintAud();build()});
+  $$('[data-w]',mb).forEach(t=>t.oninput=()=>{st.words[t.dataset.w]=t.value;schedule(400)});
+  $('#ps-close',mb).onclick=close;
+  const record=(sent,via)=>{
+    if(READONLY)return;
+    const ev={type:'postal.share',m:m.id,sub:st.m,kind,audience:st.audience,names:!!st.names,code:!!M.code,sent:!!sent,via,title:(M.hero||M.eyebrow||km.t).slice(0,80)};
+    if(st.wk)ev.wk=st.wk;if(st.gid)ev.ref=st.gid;if(st.badge)ev.ref=st.badge;if(st.days)ev.ref=String(st.days);if(kind==='temporada')ev.ref='T'+st.season;
+    if(st.sentence)ev.sentence=st.sentence.slice(0,120);if(st.dedic)ev.dedic=st.dedic.slice(0,60);
+    const w={};for(const[k]of WORDS_Q)if(st.words[k]&&st.words[k].trim())w[k]=st.words[k].trim().slice(0,240);if(Object.keys(w).length)ev.words=w;
+    if(M.consentNeeded)ev.consent=[st.m];
+    const evs=[ev];
+    if(adult&&sent&&(pol.audience!==st.audience||pol.names!==st.names))evs.push({type:'family.update',patch:{postal:{audience:st.audience,names:!!st.names}}});
+    appendEvents(evs,{silent:true});changed=true;
+  };
+  const guard=()=>{if(M&&M.consentNeeded&&!st.consent){toast('Marca que le preguntaste antes de compartir 💛');return false}return true};
+  const sb=$('#ps-send',mb);
+  if(sb)sb.onclick=()=>{
+    if(!guard())return;
+    const rec=img._postal;
+    if(dirty||!rec||!rec.blob){if(dirty)schedule(0);toast('Un segundo, la postal se está dibujando…');return}
+    sb.disabled=true;
+    postalSend(rec,text,km.t+' · '+SHARE.brand).then(r=>{
+      sb.disabled=false;
+      if(r==='abort')return;
+      record(r==='shared'||r==='text',r);
+      if(r==='shared'){chime('up');toast('Postal enviada 📮 · el texto quedó copiado por si lo necesitas',3600)}
+      else if(r==='text')toast(isIosStandalone()?'Texto enviado · mantén pulsada la vista previa para guardar la imagen':'Texto enviado · la imagen se descargó para adjuntarla',4200);
+      else if(r==='download')toast('Imagen descargada y texto copiado 📮',3600);
+      else toast('Texto copiado · mantén pulsada la imagen para guardarla 📮',3600);
+    });
+  };
+  const cb=$('#ps-copy',mb);
+  if(cb)cb.onclick=()=>{if(!guard())return;const ok=copyTextSync(text);if(ok)toast('Texto copiado 📋');else prompt('Copia el texto de la postal:',text)};
+  $('#ps-save',mb).onclick=()=>{if(!guard())return;record(false,'album');toast('Guardada en el álbum 📮');close()};
+  paintAud();paintChips();paintSeeds();build(true);
+  return mb;
+}
+/* ---- invitar a otra familia (código de regalo) ---- */
+function refModal(){
+  const d=D(),m=me();if(!m)return;
+  const code=refCodeOf(d.fam),pct=CONFIG.REFERRAL.pct,live=CONFIG.REFERRAL.live;
+  const wk=d.weekKeys.length;
+  const two=CONFIG.REFERRAL.twoSided;
+  const txt=`🌱 En casa llevamos ${wk} ${wk===1?'semana':'semanas'} con ${SHARE.brand}: metas SMART, un plan semanal y una reunión familiar cada domingo. ${live?(two?`Si te suscribes con mi código de regalo ${code}, las dos familias recibimos un ${pct}% de descuento.`:`Si te suscribes con mi código de regalo ${code}, nosotros recibimos un ${pct}% de descuento.`):`Cuando esté en la App Store, mi código de regalo será ${code}.`}`;
+  const mb=modal(`<h3>🎁 ${two?`Regala ${pct}% a otra familia`:'Invita a otra familia'}</h3>
+    <p class="small muted" style="margin-top:6px">${two?`Si otra familia empieza ${SHARE.brand} con tu código, <b>las dos familias</b> reciben un ${pct}% de descuento en la suscripción.`:`Cuando otra familia se suscriba a ${SHARE.brand} con tu código, <b>tú recibes un ${pct}% de descuento</b> en tu suscripción.`} ${live?'':'Tu código ya existe y no cambiará; se activa cuando la app llegue a la App Store.'}</p>
+    <div class="row" style="justify-content:center;margin-top:14px"><b style="font-family:var(--font-d);font-size:1.6rem;letter-spacing:.18em;color:var(--verde-ink)">${esc(code)}</b></div>
+    <div class="grid2" style="margin-top:12px"><button class="btn sec" id="rf-copy">📋 Copiar código</button><button class="btn" id="rf-share">📤 Invitar</button></div>
+    <details class="zen" style="margin-top:14px"><summary>Personalizar el código</summary><div class="inner">
+      <p class="tiny muted">Entre 4 y 14 letras o números (ej. FAMILIAPG). Vale para toda la familia.</p>
+      <div class="row" style="gap:6px;margin-top:6px"><input id="rf-new" maxlength="14" placeholder="${esc(code)}" style="text-transform:uppercase;letter-spacing:.1em"><button class="btn small sec" id="rf-save">Guardar</button></div></div></details>
+    <p class="tiny muted" style="margin-top:12px">Este código es público y solo sirve para el descuento. La clave de acceso a la familia es otra y nunca se comparte.</p>`);
+  $('#rf-copy',mb).onclick=()=>{if(copyTextSync(code))toast('Código copiado 📋');else prompt('Copia tu código:',code)};
+  $('#rf-share',mb).onclick=()=>{
+    if(navigator.share){navigator.share({title:SHARE.brand,text:txt}).then(()=>toast('¡Gracias por invitar! 🌱')).catch(()=>{})}
+    else{if(copyTextSync(txt))toast('Mensaje copiado · pégalo donde quieras 📋');else prompt('Copia el mensaje:',txt)}
+  };
+  $('#rf-save',mb).onclick=()=>{
+    const v=($('#rf-new',mb).value||'').toUpperCase().replace(/[^A-Z0-9-]/g,'');
+    if(!/^[A-Z0-9][A-Z0-9-]{2,12}[A-Z0-9]$/.test(v))return toast('Entre 4 y 14 letras o números');
+    if(v===d.fam.code)return toast('Esa es la clave de acceso: elige otra');
+    appendEvents([{type:'family.update',patch:{refCode:v}}]);toast('Código guardado: '+v);refModal();
+  };
+}
+/* ---- álbum ---- */
+function postalAlbumHtml(d,limit=10){
+  const items=d.postales.slice(0,limit);
+  if(!items.length)return '';
+  return `<div class="scroll-x" style="margin-top:10px">${items.map(p=>{const mm=d.members.get(p.m),km=kindOk(p.kind)?KIND_META[p.kind]:KIND_META.semana;
+    return `<button class="crown-card" data-postal="${esc(p.id)}" style="width:138px;text-align:left;font:inherit;color:inherit;flex:none"><div class="row" style="gap:6px"><span style="font-size:1.2rem">${km.e}</span>${mm?avatarHtml(mm,22):''}${p.sent?'':'<span class="tiny muted" title="Guardada sin enviar">·</span>'}</div>
+      <b class="tiny" style="display:block;margin-top:6px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(p.title)}</b><span class="tiny muted">${fmtDate(dkey(new Date(p.t)))}</span></button>`}).join('')}</div>`;
+}
+function bindPostalAlbum(root,d){
+  $$('[data-postal]',root).forEach(b=>b.onclick=()=>{
+    const p=d.postales.find(x=>x.id===b.dataset.postal);if(!p)return;
+    const init={kind:p.kind,m:p.sub||p.m,sentence:p.sentence||undefined,dedic:p.dedic||undefined,words:p.words||undefined};
+    if(p.kind==='semana')init.wk=p.wk;else if(p.kind==='meta')init.gid=p.ref;else if(p.kind==='insignia')init.badge=p.ref;else if(p.kind==='racha')init.days=+p.ref||7;else if(p.kind==='temporada')init.season=+String(p.ref||'T0').slice(1)||0;
+    sharePostal(init);
+  });
+}
+function postalHubHtml(d){
+  const m=me(),adult=isAdult(d,m);
+  const lc=lastClosedWeek(d);
+  const has=lc&&postalOf(d,'semana',lc);
+  const closedSeasons=Math.floor(d.weekKeys.filter(k=>d.weeks.get(k)&&d.weeks.get(k).closed).length/CONFIG.SEASON_WEEKS);
+  const sent=!!(has&&has.sent);
+  const status=!lc?'La primera postal se prepara el domingo, al cerrar la semana (18:00).':has?`Semana del ${weekLabel(lc)} · ${sent?'enviada':'guardada en el álbum'} el ${fmtDate(dkey(new Date(has.t)))}`:`Semana del ${weekLabel(lc)}${d.weeks.get(lc).sealed?' · sellada 📿':''} · lista para enviar`;
+  return `<div class="card" id="postal-hub">
+    <div class="row between"><h3 class="small">📮 Postal de la semana</h3><span class="tiny muted">álbum: ${d.postales.length}</span></div>
+    <p class="small muted" style="margin:8px 0 0">${status}</p>
+    <p class="tiny muted" style="margin:4px 0 0">Una postal para los abuelos, el grupo de la familia o quien tú quieras. Sin puestos ni podio: lo que sembramos juntos.</p>
+    ${lc?`<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+      <button class="btn small ${sent?'sec':''}" data-a="postal-week">📮 ${!adult?'Ver la postal':sent?'Enviar de nuevo':'Enviar la postal'}</button>
+      ${adult?`<button class="btn small ghost" data-a="postal-relato">✍️ Nuestra historia</button>`:''}
+      ${adult&&closedSeasons?`<button class="btn small ghost" data-a="postal-season">✉️ Carta de temporada</button>`:''}
+    </div>`:''}
+    ${postalAlbumHtml(d)}
+  </div>`;
+}
+function bindPostalHub(root,d){
+  const q=(s,f)=>{const b=$(`[data-a=${s}]`,root);if(b)b.onclick=f};
+  q('postal-week',()=>sharePostal({kind:'semana',wk:lastClosedWeek(d)}));
+  q('postal-relato',()=>sharePostal({kind:'relato'}));
+  q('postal-season',()=>{const n=Math.floor(d.weekKeys.filter(k=>d.weeks.get(k)&&d.weeks.get(k).closed).length/CONFIG.SEASON_WEEKS);sharePostal({kind:'temporada',season:n-1})});
+  bindPostalAlbum(root,d);
+}
+/* ---- celebración de meta (una sola para todos los caminos) ---- */
+function celebrateGoal(gid){
+  const d=D(),g=d.goals.get(gid);if(!g)return;
+  const m=me(),adult=isAdult(d,m);
+  const mb=modal(`<div style="text-align:center"><div style="font-size:3.4rem">🏆</div><h3>¡Objetivo completado!</h3>
+    <p class="small muted" style="margin-top:6px">${esc(g.f.objetivo||g.f.smartFinal||'')}</p>
+    <p class="gold" style="font-weight:700;margin-top:8px">+${CONFIG.GOAL_XP} XP · Trofeo permanente</p>
+    ${(adult&&!g.honorClosed&&!(d.members.get(g.m)||{}).postalOptOut)?`<button class="btn small sec" id="cg-share" style="margin-top:14px">📮 Postal del hito</button>`:''}</div>`);
+  const b=$('#cg-share',mb);if(b)b.onclick=()=>{mb.remove();sharePostal({kind:'meta',gid,m:g.m})};
+  return mb;
+}
 /* ================= REUNIÓN — modo presentación ================= */
 let MEET=null;
 function startMeeting(){
@@ -2881,8 +3471,8 @@ function renderMeeting(){
   const d=D(),p=$('#presenter');
   if(!MEET)return;
   p.hidden=false;
-  const N=10;
-  const acts=[actPortada,actCosecha,actMuro,actTurnos,actTabla,actCoronas,actRitmo,actMetas,actCompromisos,actSello];
+  const N=11;
+  const acts=[actPortada,actCosecha,actMuro,actTurnos,actTabla,actCoronas,actRitmo,actMetas,actCompromisos,actSello,actPostal];
   p.innerHTML=`<div class="stage" id="pstage"></div>
     <div class="pnav">
       <button class="btn small sec" data-a="prev" ${MEET.act===0?'disabled':''}>‹ Anterior</button>
@@ -2905,7 +3495,7 @@ function nextAct(){
       return n===0});
     if(missing.length){toast(`Faltan compromisos de: ${missing.map(m=>m.name).join(', ')}`);return}
   }
-  if(MEET.act>=9){endMeeting();return}
+  if(MEET.act>=10){endMeeting();return}
   MEET.act++;renderMeeting();
   if(MEET.act===5)chime('up');
 }
@@ -3062,11 +3652,7 @@ function actMetas(st,d){
     const gid=r.dataset.gprog;
     appendEvents([{type:'goal.update',gid,f:{progreso:+r.value,...(+r.value>=100?{estado:'Completado'}:{})}}],{silent:true});
     r.nextElementSibling.textContent=r.value+'%';
-    if(+r.value>=100){confetti(150);chime('big');
-      const g=D().goals.get(gid);
-      modal(`<div style="text-align:center"><div style="font-size:3.4rem">🏆</div><h3>¡Objetivo Completado!</h3>
-        <p class="small muted" style="margin-top:6px">${esc(g.f.smartFinal||g.f.objetivo)}</p>
-        <p class="gold" style="font-weight:700;margin-top:6px">+${CONFIG.GOAL_XP} XP · Trofeo permanente 🏛</p></div>`)}
+    if(+r.value>=100){confetti(150);chime('big');celebrateGoal(gid)}
   });
   $$('[data-gresume]',st).forEach(b=>b.onclick=()=>{appendEvents([{type:'goal.update',gid:b.dataset.gresume,f:{estado:'En progreso'}}],{silent:true});renderMeeting()});
   $$('[data-ghonor]',st).forEach(b=>b.onclick=()=>{
@@ -3153,6 +3739,32 @@ function actSello(st,d){
     confetti(160);chime('big');renderMeeting();
     setTimeout(()=>toast('Nos vemos la próxima semana 🏮'),800);
   };
+}
+function actPostal(st,d){
+  const wk=MEET.revWk,m=me(),adult=isAdult(d,m);
+  const chips=sentenceChips(d,wk);
+  if(!MEET.postal)MEET.postal={sentence:chips[0]||''};
+  const saved=!!postalOf(d,'semana',wk);
+  const pol=Object.assign({audience:'cercana',names:true},d.fam.postal||{});
+  const canSend=adult&&!!navigator.share;
+  st.innerHTML=`<div style="width:100%;max-width:640px"><div class="eyebrow" style="font-size:.85rem">Acto 10 · La Postal</div>
+    <h2 class="ptitle" style="margin-top:8px">Lo que contamos de esta semana</h2>
+    <div class="stage-postal" style="margin-top:14px"><img id="mp-img" alt="Postal de la semana" hidden><div id="mp-status" class="tiny muted">Dibujando la postal…</div></div>
+    <p class="tiny muted" style="margin-top:12px">Elijan una frase que sea verdad esta semana:</p>
+    <div class="row" style="justify-content:center;gap:6px;flex-wrap:wrap;margin-top:6px">${chips.map(c=>`<button class="chip pchip ${MEET.postal.sentence===c?'on':''}" data-s="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    <div class="row" style="justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn small sec" data-a="mp-save" ${saved?'disabled':''}>${saved?'En el álbum ✓':'Guardar en el álbum'}</button>
+      ${canSend?`<button class="btn small gold" data-a="mp-send">📮 Enviar desde este teléfono</button>`:''}
+    </div>
+    <p class="tiny muted" style="margin-top:12px;max-width:46ch;margin-left:auto;margin-right:auto">Audiencia: ${pol.audience==='publico'?'🌍 Público':'👨‍👩‍👧 Familia cercana'} (se ajusta al enviar) · ${canSend?'También queda en Liga → Postal de la semana (y el lunes en Hoy) para enviarla desde otro teléfono.':'Postal lista · un adulto la envía desde su teléfono: Liga → Postal de la semana, o el chip 📮 de Hoy el lunes.'}</p></div>`;
+  const img=$('#mp-img',st),status=$('#mp-status',st);
+  const draw=()=>{const M=postalModel(d,{kind:'semana',wk,audience:pol.audience,names:pol.names,code:false,sentence:MEET.postal.sentence,by:m.id});if(M)postalRender(M,img,status)};
+  draw();
+  $$('[data-s]',st).forEach(b=>b.onclick=()=>{MEET.postal.sentence=(MEET.postal.sentence===b.dataset.s)?'':b.dataset.s;$$('[data-s]',st).forEach(x=>x.classList.toggle('on',x.dataset.s===MEET.postal.sentence));draw()});
+  const sv=$('[data-a=mp-save]',st);if(sv)sv.onclick=()=>{
+    appendEvents([{type:'postal.share',m:m.id,kind:'semana',wk,audience:pol.audience,names:!!pol.names,code:false,sent:false,via:'reunion',title:'Semana del '+weekLabel(wk),sentence:MEET.postal.sentence}],{silent:true});
+    renderMeeting();toast('Guardada en el álbum 📮')};
+  const sd=$('[data-a=mp-send]',st);if(sd)sd.onclick=()=>sharePostal({kind:'semana',wk,sentence:MEET.postal.sentence});
 }
 /* ================= PRUEBAS (?test=1) ================= */
 function runTests(){
@@ -3298,6 +3910,63 @@ function runTests(){
     ok('T12 racha de 5 días paga hitos 3 y 5 (+90 XP)',pm.streakXP===90,'streakXP='+pm.streakXP);
     ok('T12 hitos registrados',pm.streakHits[3]===1&&pm.streakHits[5]===1,JSON.stringify(pm.streakHits));
   }
+  // T13: postales — álbum, código de regalo, modelo puro y privacidad
+  {
+    const day=addDays(W0,1),yr=new Date().getFullYear();
+    const evs=[...base,
+      {id:'m2',t:ts(W0,0),type:'member.join',m:'M2',name:'Mateo',emoji:'🐼',color:'#C4693B',pinHash:'',birthYear:yr-9},
+      {id:'q1',t:ts(W0,0),type:'goal.create',gid:'G1',m:'M1',f:{area:'lectura',objetivo:'Leer 4 libros',smartFinal:'Antes de diciembre, lograré leer 4 libros, medido mediante páginas, realizando 20 min diarios, porque contribuye a mi salud tras la terapia',identidad:'Soy alguien que lee cada día',estado:'En progreso',rel:'porque mi médico lo sugirió'},actions:[]},
+      {id:'qa',t:ts(addDays(W0,-2)),type:'act.sched',aid:'qa',m:'M1',cat:'lectura',title:'Leer 20 min',tier:'T2',date:day,goalId:'G1'},
+      {id:'qd',t:ts(day,10),type:'act.done',aid:'qa',note:'Terminé el capítulo 3, muy cansado'},
+      {id:'qb',t:ts(addDays(W0,-2)),type:'act.sched',aid:'qb',m:'M2',cat:'ejercicio',title:'Correr',tier:'T2',date:day},
+      {id:'qe',t:ts(day,11),type:'act.done',aid:'qb'},
+      {id:'qc',t:ts(day,12),type:'goal.update',gid:'G1',f:{estado:'Completado',progreso:100}},
+      {id:'qs',t:ts(addDays(W0,6),19),type:'meeting.seal',week:W0,att:['M1','M2']},
+      {id:'p1',t:ts(addDays(W0,7),9),type:'postal.share',m:'M1',kind:'semana',wk:W0,sent:true,via:'shared',title:'x',sentence:'Somos una familia que lee.',words:{f1:'Planificar',zz:'no'}}];
+    const d=mkFam(evs);
+    ok('T13 postal.share entra al álbum (recortado y validado)',d.postales.length===1&&d.postales[0].wk===W0&&d.postales[0].words.f1==='Planificar'&&!('zz' in d.postales[0].words)&&d.postales[0].sent===true);
+    const c1=refCodeOf(d.fam);
+    ok('T13 código de regalo determinista ZEN-XXXXX, distinto de la clave',/^ZEN-[A-Z2-9]{5}$/.test(c1)&&c1===refCodeOf(mkFam(evs).fam)&&c1!==d.fam.code,c1);
+    const d2=mkFam([...evs,{id:'p2',t:ts(addDays(W0,7),10),type:'family.update',patch:{refCode:'familiapg'}},{id:'p3',t:ts(addDays(W0,7),11),type:'family.update',patch:{refCode:'ABC123'}}]);
+    ok('T13 código personalizado se normaliza; igual a la clave se rechaza',refCodeOf(d2.fam)==='FAMILIAPG',refCodeOf(d2.fam));
+    ok('T13 el sello guarda asistentes',!!d.weeks.get(W0).sealed&&d.weeks.get(W0).sealAtt.length===2);
+    const P={kind:'semana',wk:W0,audience:'publico',names:true,code:true,sentence:'Somos una familia que lee.',by:'M1'};
+    const Mp=postalModel(d,P),Cp=captionOf(Mp);
+    ok('T13 público: el menor sale sin nombre, el adulto con nombre',Mp.members.length===2&&Mp.members[0].name==='Sofía'&&Mp.members[1].name==='',JSON.stringify(Mp.members.map(r=>r.name)));
+    ok('T13 semana: frase de proceso, sello y domingos',Mp.hero==='Nos propusimos 2 cosas y cumplimos 2'&&!!Mp.seal&&Mp.pride.includes('1 domingo'),Mp.hero+' | '+Mp.pride);
+    ok('T13 cada miembro con una línea positiva (sin cifras)',Mp.members.every(r=>r.line&&!/\d/.test(r.line)),JSON.stringify(Mp.members.map(r=>r.line)));
+    const Mc=postalModel(d,Object.assign({},P,{audience:'cercana'}));
+    ok('T13 familia cercana: todos con nombre y nombre de familia',Mc.members.every(r=>r.name)&&Mc.title==='Test');
+    const Mg=postalModel(d,{kind:'meta',gid:'G1',audience:'publico',names:true,code:false,by:'M1'}),Cg=captionOf(Mg);
+    ok('T13 meta: título corto, prueba de trabajo e identidad; sin frase SMART',Mg.hero==='🏆 Leer 4 libros'&&Mg.proof.includes('1 actividad')&&Mg.sentence==='Soy alguien que lee cada día'&&Mg.body==='',Mg.proof);
+    const Mr=postalModel(d,{kind:'racha',days:7,m:'M2',audience:'cercana',names:true,by:'M1'}),Cr=captionOf(Mr);
+    ok('T13 hito de un menor: enmarcado en familia y pide consentimiento',Mr.consentNeeded&&Mr.hero.includes('🐼 lleva 7 días')&&Mr.author==='',Mr.hero);
+    const all=JSON.stringify([Mp,Cp,Mg,Cg,Mr,Cr,postalModel(d,Object.assign({},P,{names:false}))]).split(c1).join('');
+    const leak=[d.fam.code,'"M1"','"M2"','http','github','supabase','Terminé','terapia','médico','páginas',String(yr-9)].filter(x=>all.includes(x));
+    ok('T13 ninguna postal filtra clave, ids, enlaces, notas ni datos sensibles',leak.length===0,leak.join(','));
+    ok('T13 código de regalo: nunca sin App Store; con live=true solo si se pide y en Público',(()=>{const was=CONFIG.REFERRAL.live;try{CONFIG.REFERRAL.live=false;const a=captionOf(postalModel(d,P));CONFIG.REFERRAL.live=true;const b=captionOf(postalModel(d,P)),c=captionOf(postalModel(d,Object.assign({},P,{audience:'cercana'})));return !a.includes(c1)&&b.includes(c1)&&!c.includes(c1)&&!Cg.includes(c1)}finally{CONFIG.REFERRAL.live=was}})());
+    ok('T13 compartir no da puntos ni XP',d.perM.get('M1').xp===mkFam(evs.filter(e=>e.type!=='postal.share')).perM.get('M1').xp);
+    ok('T13 frases sugeridas salen de los datos',sentenceChips(d,W0)[0]==='Somos una familia que se reúne los domingos.',sentenceChips(d,W0).join(' | '));
+  }
+  // T14: postales — sujeto, permisos, código de regalo y exclusión (revisión adversaria)
+  {
+    const yr=new Date().getFullYear();
+    const evs=[...base,
+      {id:'m2',t:ts(W0,1),type:'member.join',m:'M2',name:'Mateo',emoji:'🐼',color:'#C4693B',pinHash:'',birthYear:yr-9},
+      {id:'p1',t:ts(W0,2),type:'postal.share',m:'M1',sub:'M2',kind:'racha',ref:'7',sent:true,via:'shared',title:'x',consent:['M2']},
+      {id:'p2',t:ts(W0,3),type:'postal.share',m:'M1',kind:'constructor',sent:false,via:'album',title:'y'},
+      {id:'u1',t:ts(W0,4),type:'member.update',m:'M2',by:'M2',patch:{adult:true,birthYear:1990,emoji:'🐨'}}];
+    const d=mkFam(evs);
+    ok('T14 el álbum guarda el sujeto de la postal (no solo quien la envió)',d.postales.find(p=>p.id==='p1').sub==='M2');
+    ok('T14 kind heredado del prototipo se normaliza',d.postales.find(p=>p.id==='p2').kind==='semana');
+    const m2=d.members.get('M2');
+    ok('T14 un menor no puede auto-declararse adulto ni cambiar su año',!m2.adult&&m2.birthYear===yr-9&&m2.emoji==='🐨',JSON.stringify({adult:m2.adult,by:m2.birthYear}));
+    ok('T14 un adulto sí puede promover a otro miembro',mkFam([...evs,{id:'u2',t:ts(W0,5),type:'member.update',m:'M2',by:'M1',patch:{adult:true}}]).members.get('M2').adult===true);
+    const Mr=postalModel(d,{kind:'racha',days:7,m:'M2',audience:'publico',names:true,code:true,by:'M1'});
+    ok('T14 código de regalo no se imprime mientras REFERRAL.live=false',!!Mr&&Mr.code==='');
+    const d3=mkFam([...evs,{id:'u3',t:ts(W0,6),type:'member.update',m:'M2',by:'M1',patch:{postalOptOut:true}}]);
+    ok('T14 miembro excluido: sin postal de hito ni avatar en la semana',postalModel(d3,{kind:'racha',days:7,m:'M2',audience:'cercana',names:true,by:'M1'})===null&&postalModel(d3,{kind:'semana',wk:W0,audience:'cercana',names:true,by:'M1'}).members.every(r=>r.emoji!=='🐨'));
+  }
   const passN=T.filter(t=>t.pass).length;
   $('#main').innerHTML=`<div class="vgap"><h1>Pruebas del motor · ${passN}/${T.length}</h1>
     ${T.map(t=>`<div class="card" style="padding:10px 14px;border-left:4px solid ${t.pass?'var(--verde)':'var(--clay)'}">
@@ -3307,7 +3976,10 @@ function runTests(){
 }
 /* ================= ARRANQUE ================= */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){if(MEET){endMeeting();return}closeModals()}
+  const t=e.target;if(t&&t.closest&&t.closest('input,textarea,select,[contenteditable]'))return;
+  const open=document.querySelector('#modal-root .mback:last-child');
+  if(e.key==='Escape'){if(open){const c=open.querySelector('#ps-close');if(c)c.click();else open.remove();return}if(MEET){endMeeting();return}closeModals();return}
+  if(open)return;
   if(MEET&&e.key==='ArrowRight')nextAct();
   if(MEET&&e.key==='ArrowLeft'&&MEET.act>0){MEET.act--;renderMeeting()}
 });
