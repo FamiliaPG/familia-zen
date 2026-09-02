@@ -2967,48 +2967,60 @@ function sentenceChips(d,wk){
   return out.slice(0,4);
 }
 /* ---- logros y aprendizajes de la semana, derivados de los datos (pre-relleno editable) ---- */
-function weekHighlights(d,wk,pub){
+const listES=arr=>arr.length<=1?(arr[0]||''):arr.slice(0,-1).join(', ')+' y '+arr[arr.length-1];
+const cap=t=>t?t.charAt(0).toUpperCase()+t.slice(1):t;
+function weekHighlights(d,wk,pub,names=true){
   const w=d.weeks.get(wk)||null,closed=!!(w&&w.closed);
-  const lab=m=>(pub&&isMinor(d,m))?m.emoji:`${m.emoji} ${m.name}`;
-  const wins=[],learned=[];
+  const lab=m=>((pub&&isMinor(d,m))||!names)?m.emoji:`${m.emoji} ${m.name}`;
+  const wins=[],learned=[],story=[],effort=[];
   const mems=[...d.members.values()].filter(m=>m.joinT<=weekEndTs(wk)&&!m.postalOptOut);
   const ids=new Set(mems.map(m=>m.id));
   const acts=[...d.acts.values()].filter(a=>!a.canceled&&monday(a.date)===wk&&ids.has(a.m));
   const done=acts.filter(a=>a.done&&!a.voided);
-  if(w&&w.famMet){const fs=famStreakAt(d,wk);wins.push('🏮 Meta familiar cumplida'+(fs>=2?` · ${fs} semanas seguidas`:''))}
+  const cats=new Set(done.map(a=>a.cat));
+  // --- logros (siempre en positivo) ---
+  if(w&&w.famMet){const fs=famStreakAt(d,wk);const t='🏮 Meta familiar cumplida'+(fs>=2?` · ${fs} semanas seguidas`:'');wins.push(t);story.push('cumplimos la meta familiar'+(fs>=2?` por ${fs} semanas seguidas`:''))}
   for(const g of d.goals.values()){
     if(g.deleted||g.honorClosed||!g.completedT||monday(dkey(new Date(g.completedT)))!==wk)continue;
     const m=d.members.get(g.m);if(!m||!ids.has(m.id))continue;
-    const cat=CATS[g.f.area]||CATS.otro;
-    wins.push((pub&&isMinor(d,m))?`🏆 ${m.emoji} cumplió su meta de ${cat.n.toLowerCase()}`:`🏆 ${lab(m)} cumplió su meta: ${g.f.objetivo||cat.n}`);
+    const cat=CATS[g.f.area]||CATS.otro,minor=pub&&isMinor(d,m);
+    const t=minor?`${lab(m)} cumplió su meta de ${cat.n.toLowerCase()}`:`${lab(m)} cumplió su meta «${g.f.objetivo||cat.n}»`;
+    wins.push('🏆 '+t);story.push(t);
   }
-  for(const m of mems){const pm=d.perM.get(m.id),mw=pm&&pm.week.get(wk);if(mw&&mw.perfect)wins.push(`🌟 ${lab(m)}: semana impecable`)}
-  if(closed){const cr=Object.entries(w.crowns||{}).map(([c,id])=>{const m=d.members.get(id);return (m&&ids.has(id))?`${lab(m)} en ${CATS[c].n}`:''}).filter(Boolean);if(cr.length)wins.push('👑 Coronas: '+cr.slice(0,3).join(', '))}
+  for(const m of mems){const pm=d.perM.get(m.id),mw=pm&&pm.week.get(wk);if(mw&&mw.perfect){wins.push(`🌟 ${lab(m)}: semana impecable`);story.push(`${lab(m)} tuvo una semana impecable`)}}
+  if(closed){const cr=Object.entries(w.crowns||{}).map(([c,id])=>{const m=d.members.get(id);return (m&&ids.has(id))?`${lab(m)} en ${CATS[c].n}`:''}).filter(Boolean);
+    if(cr.length){wins.push('👑 Coronas: '+cr.slice(0,3).join(', '));story.push(`brilló ${listES(cr.slice(0,3))}`)}}
   const cur=lastClosedWeek(d);
-  if(wk===cur)for(const m of mems){const pm=d.perM.get(m.id);if(pm&&pm.dayStreak>=7)wins.push(`🔥 ${lab(m)} lleva ${pm.dayStreak} días seguidos`)}
-  if(w&&w.sealed)wins.push(`📿 Reunión sellada${(w.sealAtt||[]).length?` con ${(w.sealAtt||[]).length} presentes`:''}`);
-  if(done.length)wins.push(`✅ ${done.length} ${done.length===1?'actividad cumplida':'actividades cumplidas'} de ${acts.length}`);
-  // aprendizajes: hechos del proceso, nunca notas privadas
+  if(wk===cur)for(const m of mems){const pm=d.perM.get(m.id);if(pm&&pm.dayStreak>=7){wins.push(`🔥 ${lab(m)} lleva ${pm.dayStreak} días seguidos`);story.push(`${lab(m)} lleva ${pm.dayStreak} días seguidos cumpliendo`)}}
+  if(w&&w.sealed){const n=(w.sealAtt||[]).length;wins.push(`📿 Reunión sellada${n?` con ${n} presentes`:''}`);story.push(`sellamos la reunión familiar${n?` con ${n===mems.length?'todos':n} presentes`:''}`)}
+  if(done.length){wins.push(`✅ ${done.length} ${done.length===1?'actividad cumplida':'actividades cumplidas'} de ${acts.length}`);effort.push(`entre todos cumplimos ${done.length} ${done.length===1?'actividad':'actividades'}${cats.size>=2?` en ${cats.size} áreas de vida`:''}`)}
+  // --- aprendizajes: hechos del proceso, solo en positivo, nunca notas privadas ---
   const planned=acts.filter(a=>a.schedT<dayStart(a.date)||a.rescheduled),plannedDone=planned.filter(a=>a.done&&!a.voided);
   const improv=done.filter(a=>a.schedT>=dayStart(a.date)&&!a.rescheduled);
-  if(plannedDone.length)learned.push(`Planificar el domingo funciona: cumplimos ${plannedDone.length} de ${planned.length} planificadas${improv.length?` (y ${improv.length} improvisadas)`:''}`);
-  else if(improv.length)learned.push(`Todo lo cumplido fue improvisado: planificarlo el domingo vale el doble`);
+  if(plannedDone.length)learned.push(`Planificar el domingo funciona: cumplimos ${plannedDone.length} de ${planned.length} planificadas${improv.length?` y sumamos ${improv.length} con iniciativa propia`:''}`);
+  else if(improv.length)learned.push(`Cumplimos ${improv.length} ${improv.length===1?'actividad':'actividades'} con iniciativa propia: ganas no faltan`);
   const byDay={};for(const a of done)byDay[a.date]=(byDay[a.date]||0)+1;
   const best=Object.entries(byDay).sort((x,y)=>y[1]-x[1])[0];
-  if(best&&best[1]>=2){const dt=fromKey(best[0]);learned.push(`Nuestro mejor día fue el ${['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][dt.getDay()]} (${best[1]} actividades)`)}
+  if(best&&best[1]>=2){const dt=fromKey(best[0]);learned.push(`Nuestro mejor día fue el ${['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][dt.getDay()]} con ${best[1]} actividades`)}
   const cn={};for(const a of done)cn[a.cat]=(cn[a.cat]||0)+1;
   const top=Object.entries(cn).sort((x,y)=>y[1]-x[1])[0];
-  if(top&&top[1]>=2)learned.push(`Lo que más repetimos: ${CATS[top[0]].n} (${top[1]} veces)`);
+  if(top&&top[1]>=2)learned.push(`Lo que más cuidamos fue ${CATS[top[0]].n} (${top[1]} veces)`);
   const resc=done.filter(a=>a.rescheduled).length;if(resc)learned.push(`Reprogramar salvó ${resc} ${resc===1?'actividad':'actividades'}: mover no es fallar`);
-  const rests=STATE.events.filter(e=>e.type==='day.rest'&&ids.has(e.m)&&monday(e.date)===wk).length;if(rests)learned.push(`Descansar a propósito (${rests} ${rests===1?'día':'días'}) no rompió la racha`);
-  let late=0;for(const m of mems){const pm=d.perM.get(m.id),mw=pm&&pm.week.get(wk);if(mw)late+=mw.backfills||0}
-  if(late)learned.push(`Registrar el mismo día ayuda: ${late} ${late===1?'registro llegó':'registros llegaron'} tarde`);
-  if(!done.length)learned.push('Una semana para respirar; el domingo volvemos a planificar');
+  const rests=STATE.events.filter(e=>e.type==='day.rest'&&ids.has(e.m)&&monday(e.date)===wk).length;if(rests)learned.push(`Descansar a propósito (${rests} ${rests===1?'día':'días'}) mantuvo la racha viva`);
+  if(!done.length){learned.push('Descansar también es crecer: el domingo volvemos a planificar juntos');story.push('nos dimos una semana para respirar y volvemos con energía')}
   const advice=[ADVICE[Math.floor(srand('adv'+wk)*ADVICE.length)],...ADVICE.filter((x,i)=>i!==Math.floor(srand('adv'+wk)*ADVICE.length))];
-  return {wins,learned,advice};
+  return {wins,learned,advice,story,effort};
 }
 function joinMax(arr,max){let out='';for(const x of arr){const t=out?out+' · '+x:x;if(t.length>max)break;out=t}return out}
-function weekWords(d,wk,pub){const H=weekHighlights(d,wk,pub);return {f1:joinMax(H.wins,200),f2:joinMax(H.learned.slice(0,2),200),f3:H.advice[0]||''}}
+function weekWords(d,wk,pub,names=true){
+  const H=weekHighlights(d,wk,pub,names);
+  let parts=[...H.story,...H.effort],f1='';
+  while(parts.length){f1='Esta semana '+listES(parts)+'.';if(f1.length<=230)break;parts=parts.slice(0,-1)}
+  if(!parts.length)f1='Esta semana seguimos sembrando en familia.';
+  const l=H.learned.slice(0,2).map(x=>x.replace(/\.$/,''));
+  const f2=l.length?cap(l.join('. '))+'.':'';
+  return {f1:f1.slice(0,240),f2:f2.slice(0,240),f3:H.advice[0]||''};
+}
 /* ventana del domingo: semana cerrada más reciente aún no ENVIADA, desde el cierre (dom 18:00) hasta el martes */
 function postalReadyWeek(d,now){
   const lc=lastClosedWeek(d);if(!lc)return null;
@@ -3059,7 +3071,7 @@ function postalModel(d,p){
     M.members=rows;
     M.hero=totN?(solo?`Me propuse ${totN} ${totN===1?'cosa':'cosas'} y cumplí ${doneN}`:`Nos propusimos ${totN} ${totN===1?'cosa':'cosas'} y cumplimos ${doneN}`):'Una semana para respirar';
     const fs=famStreakAt(d,wk);
-    M.sub=w&&w.famMet?'🏮 Meta familiar cumplida'+(fs>=2?` · ${fs} semanas seguidas`:''):(closed&&totN?'🌄 La montaña sigue ahí. Volvemos el lunes.':(!closed?'Semana en curso':''));
+    M.sub=w&&w.famMet?'🏮 Meta familiar cumplida'+(fs>=2?` · ${fs} semanas seguidas`:''):(!closed?'🌱 Semana en curso':doneN&&totN&&doneN/totN>=.8?'💪 Constancia en familia: casi todo lo planificado':doneN?'🌱 Semana de siembra: seguimos creciendo juntos':'🍵 Descansar también es crecer');
     const sr=sealedRunAt(d,wk);
     M.pride=sr>=1?`📿 ${sr} ${sr===1?'domingo':'domingos seguidos'} de Reunión Familiar`:'';
     M.cats=Object.entries(cats).sort((x,y)=>y[1]-x[1]).map(([c])=>c);
@@ -3196,11 +3208,11 @@ function drawWords(ctx,M,L,y,CW,maxY,big){
   const n=Object.keys(M.words).length,compact=!big&&n>=2;
   for(const[k,lab]of WORDS_Q){
     const t=M.words[k];if(!t)continue;
-    if(y+(compact?70:90)>maxY)break;
-    ctx.fillStyle=PC.ink3;ctx.font=FB(700,big?23:compact?20:21);ctx.fillText(lab.toUpperCase(),L,y+22);
+    if(y+(compact?58:90)>maxY)break;
+    ctx.fillStyle=PC.ink3;ctx.font=FB(700,big?23:compact?20:21);ctx.fillText(lab.toUpperCase(),L,y+20);
     ctx.fillStyle=PC.ink;ctx.font=FB(500,big?34:compact?27:29);
-    const lh=big?44:compact?34:37,room=Math.max(1,Math.floor((maxY-y-36)/lh));
-    y=drawWrapped(ctx,t,L,y+(compact?54:62),CW,lh,Math.min(big?5:compact?2:3,room))+(compact?8:14);
+    const lh=big?44:compact?33:37,room=Math.max(1,Math.floor((maxY-y-(compact?26:36))/lh));
+    y=drawWrapped(ctx,t,L,y+(compact?50:62),CW,lh,Math.min(big?5:3,room))+(compact?6:14);
   }
   return y;
 }
@@ -3223,22 +3235,22 @@ async function drawPostal(M){
   ctx.fillStyle=PC.ink;ctx.font=FD(900,36);ctx.fillText(M.brand,lx,y+58);
   ctx.textAlign='right';ctx.fillStyle=PC.ink2;ctx.font=FB(500,26);ctx.fillText(wrapLines(ctx,M.date,CW*.55,1)[0],L+CW,y+26);
   if(M.tenure){ctx.fillStyle=PC.ink3;ctx.font=FB(500,23);ctx.fillText(M.tenure,L+CW,y+58)}ctx.textAlign='left';
-  y+=118;ctx.fillStyle=PC.line;ctx.fillRect(L,y,CW,2);const divY=y;y+=46;
+  y+=112;ctx.fillStyle=PC.line;ctx.fillRect(L,y,CW,2);const divY=y;y+=38;
   if(M.dedic){ctx.fillStyle=PC.kin;ctx.font=FD(700,30);y=drawWrapped(ctx,`Para ${M.dedic}, con cariño 💛`,L,y+22,CW,36,2)+10}
   if(M.kind==='semana'||M.kind==='temporada'){
     if(M.seal)drawSeal(ctx,L+CW-70,divY+26,64,M.seal);
     ctx.fillStyle=PC.ink;ctx.font=FD(900,54);y=drawWrapped(ctx,M.title,L,y+34,M.seal?CW-170:CW,60,2)-60+8;
-    y+=34;
+    y+=26;
     ctx.fillStyle=PC.verdeInk;ctx.font=FD(900,42);y=drawWrapped(ctx,M.hero,L,y+28,CW,52,3)+2;
     if(M.sub){ctx.fillStyle=PC.ink;ctx.font=FB(700,30);y=drawWrapped(ctx,M.sub,L,y+22,CW,38,2)}
     if(M.proof){ctx.fillStyle=PC.ink2;ctx.font=FB(500,29);y=drawWrapped(ctx,M.proof,L,y+22,CW,36,2)}
     if(M.pride){ctx.fillStyle=PC.kin;ctx.font=FB(700,29);y=drawWrapped(ctx,M.pride,L,y+22,CW,36,2)}
     if(M.cats.length){ctx.font=FB(400,32);const es=M.cats.slice(0,8).map(c=>CATS[c].e).join(' ');ctx.fillStyle=PC.ink;ctx.fillText(es,L,y+36);
-      const ew=ctx.measureText(es).width;if(M.cats.length>=2){ctx.fillStyle=PC.ink3;ctx.font=FB(600,25);ctx.fillText(`· ${M.cats.length} áreas de vida`,L+ew+14,y+34)}y+=56}
-    y+=14;
+      const ew=ctx.measureText(es).width;if(M.cats.length>=2){ctx.fillStyle=PC.ink3;ctx.font=FB(600,25);ctx.fillText(`· ${M.cats.length} áreas de vida`,L+ew+14,y+34)}y+=50}
+    y+=8;
     // reserva de espacio para la frase, las palabras y el pie de método
-    ctx.font=FD(700,34);const sentH=M.sentence?(wrapLines(ctx,M.sentence,CW-52,3).length*44+36):0;
-    const nW=Object.keys(M.words).length,wordsH=nW?(nW>=2?nW*88:104):0;
+    ctx.font=FD(700,34);const sentH=M.sentence?(wrapLines(ctx,'«'+M.sentence+'»',CW,3).length*44+36):0;
+    const nW=Object.keys(M.words).length,wordsH=nW?(nW>=2?nW*100:104):0;
     const room=maxY-64-sentH-wordsH-y;
     const rows=M.members.slice(0,8),withLines=rows.some(r=>r.line);
     if(rows.length&&room>50){
@@ -3256,15 +3268,15 @@ async function drawPostal(M){
           else{ctx.fillStyle=PC.ink;ctx.font=FB(700,25);ctx.fillText(wrapLines(ctx,r.line,tw,1)[0],tx,yy+ch/2+8)}});
         y+=drawn*ch;
       }else{
-        let cx=L+32;const hasN=rows.some(r=>r.name);
+        let cx=L+32;const hasN=nW<3&&rows.some(r=>r.name);
         for(const r of rows){if(cx+34>L+CW)break;drawAvatar(ctx,cx,y+32,30,r.emoji,r.color);
-          if(r.name){ctx.fillStyle=PC.ink2;ctx.font=FB(600,19);ctx.textAlign='center';ctx.fillText(wrapLines(ctx,r.name,88,1)[0],cx,y+88);ctx.textAlign='left'}cx+=96}
+          if(hasN&&r.name){ctx.fillStyle=PC.ink2;ctx.font=FB(600,19);ctx.textAlign='center';ctx.fillText(wrapLines(ctx,r.name,88,1)[0],cx,y+88);ctx.textAlign='left'}cx+=96}
         y+=hasN?104:76;
       }
     }
-    y+=12;
-    if(M.sentence){ctx.fillStyle=PC.kin;ctx.font=FD(900,70);ctx.fillText('“',L-4,y+50);ctx.fillStyle=PC.ink;ctx.font=FD(700,34);y=drawWrapped(ctx,M.sentence,L+52,y+42,CW-52,44,3)+2}
-    if(nW)y=drawWords(ctx,M,L,y+8,CW,maxY-60,false);
+    y+=6;
+    if(M.sentence){ctx.fillStyle=PC.ink;ctx.font=FD(700,34);y=drawWrapped(ctx,'«'+M.sentence+'»',L,y+40,CW,44,3)-4}
+    if(nW)y=drawWords(ctx,M,L,y+8,CW,maxY-40,false);
     if(M.method&&!nW&&y+40<maxY-30){ctx.fillStyle=PC.ink3;ctx.font=FB(500,23);drawWrapped(ctx,M.method,L,maxY-54,CW,26,2)}
   }else if(M.kind==='relato'){
     ctx.fillStyle=PC.kin;ctx.font=FD(900,150);ctx.fillText('“',L-6,y+96);
@@ -3283,7 +3295,7 @@ async function drawPostal(M){
     if(M.sub){ctx.fillStyle=PC.ink2;ctx.font=FB(500,31);y=drawWrapped(ctx,M.sub,L,y+26,CW,40,3,'center')+4}
     if(M.proof){ctx.fillStyle=PC.verdeInk;ctx.font=FB(700,30);y=drawWrapped(ctx,M.proof,L,y+26,CW,38,2,'center')+4}
     if(M.body){ctx.fillStyle=PC.ink2;ctx.font=FB(400,28);y=drawWrapped(ctx,'«'+M.body+'»',L,y+26,CW,36,5,'center')+4}
-    if(M.sentence){rrect(ctx,L,y+16,CW,96,22);ctx.fillStyle=PC.kinW;ctx.fill();ctx.fillStyle=PC.kin;ctx.font=FD(700,30);drawWrapped(ctx,'🌱 '+M.sentence,L+24,y+60,CW-48,38,2,'center');y+=130}
+    if(M.sentence){rrect(ctx,L,y+16,CW,96,22);ctx.fillStyle=PC.kinW;ctx.fill();ctx.fillStyle=PC.kin;ctx.font=FD(700,30);drawWrapped(ctx,'🌱 «'+M.sentence+'»',L+24,y+60,CW-48,38,2,'center');y+=130}
     y+=36;
     drawAvatar(ctx,L+CW/2,y+40,40,M.authorEmoji,M.authorColor);
     ctx.textAlign='center';ctx.fillStyle=PC.ink;ctx.font=FD(700,32);ctx.fillText((M.author?M.author+' · ':'')+M.title,L+CW/2,y+126);
@@ -3353,7 +3365,7 @@ function sharePostal(init={}){
   const st=Object.assign({kind,wk:init.wk||null,gid:init.gid||null,m:owner,days:init.days||0,badge:init.badge||null,season:init.season||0,
     audience:pol.audience,names:pol.names,code:live,sentence:null,dedic:'',words:{f1:'',f2:'',f3:''},smartFull:false,consent:false,by:m.id},
     keep,init.sentence?{sentence:init.sentence}:{},init.dedic?{dedic:init.dedic}:{},init.words?{words:Object.assign({f1:'',f2:'',f3:''},init.words)}:{});
-  if(kind==='semana'&&!('words' in keep)&&!init.words)st.words=Object.assign({f1:'',f2:'',f3:''},weekWords(d,st.wk,st.audience==='publico'));
+  if(kind==='semana'&&!('words' in keep)&&!init.words){st.words=Object.assign({f1:'',f2:'',f3:''},weekWords(d,st.wk,st.audience==='publico',st.names));st.auto=true}
   POSTAL_DRAFT[dk]=st;
   const hasWords=WORDS_Q.some(([k])=>st.words[k]&&st.words[k].trim());
   let chips=sentenceChips(d,st.wk||lastClosedWeek(d));
@@ -3366,8 +3378,8 @@ function sharePostal(init={}){
     <div class="postal-prev"><img id="ps-img" alt="Vista previa de la postal" hidden><div id="ps-status" class="tiny muted">Dibujando la postal…</div></div>
     <div id="ps-chips" class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px"></div>
     <div id="ps-ctl"></div>
-    <details class="zen" id="ps-words" style="margin-top:10px" ${(kind==='relato'||hasWords)?'open':''}><summary>✍️ ${kind==='relato'?'Nuestra historia en tres frases':hasWords?'Lo que logramos y aprendimos (editable)':'Añadir unas palabras'}</summary><div class="inner">
-      <p class="tiny muted" style="margin:0 0 4px">${kind==='semana'?'Pre-rellenado con los datos de la semana: edita, borra o toca otra idea. ':''}Sin datos de salud ni nombres de otras personas. Lo vacío no sale.</p>
+    <details class="zen" id="ps-words" style="margin-top:10px" ${kind==='relato'?'open':''}><summary>✍️ ${kind==='relato'?'Nuestra historia en tres frases':hasWords?'Texto de la postal (automático · se puede editar)':'Añadir unas palabras'}</summary><div class="inner">
+      <p class="tiny muted" style="margin:0 0 4px">${kind==='semana'?'Escrito solo con los datos de la semana, siempre en positivo. No hace falta escribir nada; si quieres, edita o toca otra idea. ':''}Sin datos de salud ni nombres de otras personas. Lo vacío no sale.</p>
       ${WORDS_Q.map(([k,l,ph])=>`<label class="field" style="margin-top:8px"><span class="lab">${l}</span><textarea data-w="${k}" rows="2" maxlength="240" placeholder="${esc(ph)}">${esc(st.words[k]||'')}</textarea></label>`).join('')}
       <div id="ps-seeds" class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"></div>
       <div class="row" style="margin-top:8px"><button class="btn small ghost" id="ps-clearw">↺ Vaciar las tres</button></div>
@@ -3386,6 +3398,7 @@ function sharePostal(init={}){
   const refresh=()=>{M=postalModel(d,st);if(!M){close();toast('No se pudo preparar esa postal');return false}text=captionOf(M);return true};
   const schedule=ms=>{dirty=true;if(img._postal){img._postal.ver++;img._postal.file=null;img._postal.blob=null}clearTimeout(tm);tm=setTimeout(()=>{dirty=false;if(refresh())postalRender(M,img,status)},ms)};
   const build=(now)=>{if(!refresh())return;paintOpts();schedule(now?0:150)};
+  const regen=()=>{if(kind!=='semana'||!st.auto)return;st.words=Object.assign({f1:'',f2:'',f3:''},weekWords(d,st.wk,st.audience==='publico',st.names));$$('[data-w]',mb).forEach(t=>{t.value=st.words[t.dataset.w]||''})};
   const paintAud=()=>{
     $$('#ps-aud button',mb).forEach(b=>b.classList.toggle('on',b.dataset.aud===st.audience));
     $('#ps-audnote',mb).textContent=st.audience==='publico'?'Público: los menores salen solo con su avatar, sin nombre. Piensa en redes o grupos grandes.':'Familia cercana: abuelos, tíos, el grupo de la familia. Nombres visibles si quieres.';
@@ -3406,12 +3419,12 @@ function sharePostal(init={}){
       ${(kind==='meta'&&M&&!M.minorFramed&&!M.consentNeeded)?`<label class="row between small"><span>Frase SMART completa <span class="tiny muted">(puede llevar datos personales)</span></span><input type="checkbox" data-o="smartFull" ${st.smartFull?'checked':''} style="width:auto"></label>`:''}
       ${(M&&M.consentNeeded)?`<label class="row small" style="gap:8px;padding:8px 10px;border-radius:10px;background:var(--kin-wash)"><input type="checkbox" data-o="consent" ${st.consent?'checked':''} style="width:auto"><span>Le pregunté a ${esc(subj.emoji)} ${esc(subj.name)} y está de acuerdo en que se comparta 💛</span></label>`:''}
       <label class="field" style="margin-top:6px"><span class="lab">Dedicatoria <span class="muted">(opcional)</span></span><input data-o="dedic" maxlength="60" placeholder="Ej. abuela Carmen" value="${esc(st.dedic)}"></label>`;
-    $$('[data-o]',o).forEach(i=>i.oninput=()=>{const k=i.dataset.o;if(i.type==='checkbox')st[k]=i.checked;else st[k]=i.value;if(k==='dedic')schedule(350);else build()});
+    $$('[data-o]',o).forEach(i=>i.oninput=()=>{const k=i.dataset.o;if(i.type==='checkbox')st[k]=i.checked;else st[k]=i.value;if(k==='names')regen();if(k==='dedic')schedule(350);else build()});
   };
   const paintSeeds=()=>{
     const sd=$('#ps-seeds',mb);const ws=st.wk||lastClosedWeek(d);
     const seeds=[];
-    if(ws){const H=weekHighlights(d,ws,st.audience==='publico');
+    if(ws){const H=weekHighlights(d,ws,st.audience==='publico',st.names);
       const wl=joinMax(H.wins,200);if(wl)seeds.push(['f1',wl,'Todos los logros']);
       H.wins.forEach(x=>seeds.push(['f1',x]));
       H.learned.forEach(x=>seeds.push(['f2',x]));
@@ -3421,11 +3434,11 @@ function sharePostal(init={}){
       ADVICE.slice(0,2).forEach(x=>seeds.push(['f3',x]));}
     const lab={f1:'Logro',f2:'Aprendizaje',f3:'Consejo'};
     sd.innerHTML=seeds.length?`<span class="tiny muted" style="width:100%">Toca una idea para ponerla en su campo (reemplaza el texto):</span>`+seeds.slice(0,12).map(([k,t,l])=>`<button class="chip pchip" data-seed="${k}" data-t="${esc(t)}" title="${esc(t)}">${lab[k]}: ${esc(l||(t.length>40?t.slice(0,38)+'…':t))}</button>`).join(''):'';
-    $$('[data-seed]',sd).forEach(b=>b.onclick=()=>{const k=b.dataset.seed;const ta=$(`[data-w=${k}]`,mb);if(ta){ta.value=b.dataset.t;st.words[k]=b.dataset.t;build()}});
-    const cw=$('#ps-clearw',mb);if(cw)cw.onclick=()=>{for(const[k]of WORDS_Q){st.words[k]='';const ta=$(`[data-w=${k}]`,mb);if(ta)ta.value=''}build()};
+    $$('[data-seed]',sd).forEach(b=>b.onclick=()=>{const k=b.dataset.seed;const ta=$(`[data-w=${k}]`,mb);if(ta){ta.value=b.dataset.t;st.words[k]=b.dataset.t;st.auto=false;build()}});
+    const cw=$('#ps-clearw',mb);if(cw)cw.onclick=()=>{st.auto=false;for(const[k]of WORDS_Q){st.words[k]='';const ta=$(`[data-w=${k}]`,mb);if(ta)ta.value=''}build()};
   };
-  $$('#ps-aud button',mb).forEach(b=>b.onclick=()=>{st.audience=b.dataset.aud;st.names=(st.audience===pol.audience)?pol.names:(st.audience==='publico'?false:true);if(st.audience!=='publico')st.code=false;paintAud();paintSeeds();build()});
-  $$('[data-w]',mb).forEach(t=>t.oninput=()=>{st.words[t.dataset.w]=t.value;schedule(400)});
+  $$('#ps-aud button',mb).forEach(b=>b.onclick=()=>{st.audience=b.dataset.aud;st.names=(st.audience===pol.audience)?pol.names:(st.audience==='publico'?false:true);if(st.audience!=='publico')st.code=false;regen();paintAud();paintSeeds();build()});
+  $$('[data-w]',mb).forEach(t=>t.oninput=()=>{st.words[t.dataset.w]=t.value;st.auto=false;schedule(400)});
   $('#ps-close',mb).onclick=close;
   const record=(sent,via)=>{
     if(READONLY)return;
@@ -3539,7 +3552,7 @@ function postalReadyHtml(d){
     <div class="row" style="gap:14px;align-items:flex-start">
       <div class="postal-mini" style="flex:none"><img alt="Vista previa de la postal" hidden><div class="tiny muted" data-st style="width:96px;text-align:center">…</div></div>
       <div class="grow"><h3 class="small">📮 La postal de la semana está lista</h3>
-        <p class="tiny muted" style="margin:4px 0 0">Semana del ${weekLabel(wk)}${w&&w.sealed?' · sellada 📿':''}${p?' · guardada en el álbum':''}. Viene con lo que logramos y aprendimos; puedes editarla antes de enviarla.</p>
+        <p class="tiny muted" style="margin:4px 0 0">Semana del ${weekLabel(wk)}${w&&w.sealed?' · sellada 📿':''}${p?' · guardada en el álbum':''}. Ya está escrita con lo mejor de la semana; solo hay que enviarla (o retocarla si quieres).</p>
         <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn small" data-a="postal-ready">📮 Enviar la postal</button></div>
       </div></div></div>`;
 }
@@ -3550,7 +3563,7 @@ function bindPostalReady(root,d){
   const img=$('img',c),stt=$('[data-st]',c);
   const pol=Object.assign({audience:'cercana',names:true},d.fam.postal||{}),pub=pol.audience==='publico';
   const p=postalOf(d,'semana',wk);
-  const M=postalModel(d,{kind:'semana',wk,audience:pol.audience,names:pol.names,code:false,sentence:(p&&p.sentence)||sentenceChips(d,wk)[0]||'',words:(p&&p.words)||weekWords(d,wk,pub),by:me().id});
+  const M=postalModel(d,{kind:'semana',wk,audience:pol.audience,names:pol.names,code:false,sentence:(p&&p.sentence)||sentenceChips(d,wk)[0]||'',words:(p&&p.words)||weekWords(d,wk,pub,pol.names),by:me().id});
   if(M)postalRender(M,img,stt);
   c.querySelector('.postal-mini').onclick=()=>sharePostal({kind:'semana',wk});
 }
@@ -3860,7 +3873,7 @@ function actPostal(st,d){
   st.innerHTML=`<div style="width:100%;max-width:640px"><div class="eyebrow" style="font-size:.85rem">Acto 10 · La Postal</div>
     <h2 class="ptitle" style="margin-top:8px">Lo que contamos de esta semana</h2>
     <div class="stage-postal" style="margin-top:14px"><img id="mp-img" alt="Postal de la semana" hidden><div id="mp-status" class="tiny muted">Dibujando la postal…</div></div>
-    <p class="tiny muted" style="margin-top:12px">Viene con lo que logramos y aprendimos esta semana. Elijan una frase que sea verdad:</p>
+    <p class="tiny muted" style="margin-top:12px">Ya viene escrita con lo mejor de la semana. Elijan una frase que sea verdad:</p>
     <div class="row" style="justify-content:center;gap:6px;flex-wrap:wrap;margin-top:6px">${chips.map(c=>`<button class="chip pchip ${MEET.postal.sentence===c?'on':''}" data-s="${esc(c)}">${esc(c)}</button>`).join('')}</div>
     <div class="row" style="justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap">
       <button class="btn small sec" data-a="mp-save" ${saved?'disabled':''}>${saved?'En el álbum ✓':'Guardar en el álbum'}</button>
@@ -3868,7 +3881,7 @@ function actPostal(st,d){
     </div>
     <p class="tiny muted" style="margin-top:12px;max-width:46ch;margin-left:auto;margin-right:auto">Audiencia: ${pol.audience==='publico'?'🌍 Público':'👨‍👩‍👧 Familia cercana'} (se ajusta al enviar) · ${canSend?'También queda en Liga → Postal de la semana (y el lunes en Hoy) para enviarla desde otro teléfono.':'Postal lista · un adulto la envía desde su teléfono: Liga → Postal de la semana, o el chip 📮 de Hoy el lunes.'}</p></div>`;
   const img=$('#mp-img',st),status=$('#mp-status',st);
-  const words=weekWords(d,wk,pol.audience==='publico');
+  const words=weekWords(d,wk,pol.audience==='publico',pol.names);
   const draw=()=>{const M=postalModel(d,{kind:'semana',wk,audience:pol.audience,names:pol.names,code:false,sentence:MEET.postal.sentence,words,by:m.id});if(M)postalRender(M,img,status)};
   draw();
   $$('[data-s]',st).forEach(b=>b.onclick=()=>{MEET.postal.sentence=(MEET.postal.sentence===b.dataset.s)?'':b.dataset.s;$$('[data-s]',st).forEach(x=>x.classList.toggle('on',x.dataset.s===MEET.postal.sentence));draw()});
@@ -4098,7 +4111,9 @@ function runTests(){
     ok('T15 aprendizajes salen del proceso (planificado, mejor día, categoría)',H.learned.length>=2&&H.learned.some(x=>/Planificar el domingo/.test(x))&&H.learned.some(x=>/mejor día/.test(x)),H.learned.join(' | '));
     const W=weekWords(d,W0,false);
     ok('T15 pre-relleno: tres campos con texto ≤200',!!(W.f1&&W.f2&&W.f3)&&[W.f1,W.f2,W.f3].every(x=>x.length<=200),JSON.stringify(W));
-    ok('T15 público: el menor sale sin nombre; en familia cercana sí',!weekWords(d,W0,true).f1.includes('Mateo')&&weekWords(d,W0,true).f1.includes('🐼 cumplió su meta de lectura')&&W.f1.includes('Mateo cumplió su meta: Leer 3 cuentos'),weekWords(d,W0,true).f1);
+    ok('T15 público: el menor sale sin nombre; en familia cercana sí',!weekWords(d,W0,true).f1.includes('Mateo')&&weekWords(d,W0,true).f1.includes('🐼 cumplió su meta de lectura')&&W.f1.includes('Mateo cumplió su meta «Leer 3 cuentos»'),weekWords(d,W0,true).f1);
+    ok('T15 texto automático: narrativa completa y siempre en positivo',/^Esta semana .+\.$/.test(W.f1)&&/^[A-ZÁÉÍÓÚ].+\.$/.test(W.f2)&&!/tarde|montaña|improvisad/i.test(W.f1+W.f2)&&W.f1.includes('sellamos la reunión'),W.f1+' | '+W.f2);
+    ok('T15 semana sin actividades: sigue en positivo',/respirar|sembrando/.test(weekWords(mkFam(base),W0,false).f1)&&postalModel(mkFam(base),{kind:'semana',wk:W0,audience:'cercana',names:true,by:'M1'}).sub.includes('Descansar'));
     const M=postalModel(d,{kind:'semana',wk:W0,audience:'publico',names:true,words:{f2:'Mateo aprendió a leer solo; la semana fue de Mateo.'},sentence:'Mateo lee',dedic:'abuela de Mateo',by:'M1'});
     ok('T15 público: nombres de menores en texto libre → avatar',M.words.f2==='🐼 aprendió a leer solo; la semana fue de 🐼.'&&M.sentence==='🐼 lee'&&M.dedic==='abuela de 🐼',M.words.f2);
     ok('T15 familia cercana: el texto libre se respeta',postalModel(d,{kind:'semana',wk:W0,audience:'cercana',names:true,words:{f2:'Mateo lee'},by:'M1'}).words.f2==='Mateo lee');
