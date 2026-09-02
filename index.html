@@ -405,7 +405,7 @@ try{window.fzApplyTheme(localStorage.getItem(window.FZTHEMEKEY)||'')}catch(e){}
 <div id="tabbar" hidden><div class="wrap"></div></div>
 <div id="presenter" hidden></div>
 <div id="modal-root"></div>
-<div id="toast-root"></div>
+<div id="toast-root" role="status" aria-live="polite"></div>
 <div id="fz-diag" hidden style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#A65440;color:#fff;padding:8px 12px;font:12px monospace;white-space:pre-wrap"></div>
 <script id="app-state" type="application/json">{"v":1,"events":[]}</script>
 <script data-app>window.__fzErr=[];window.onerror=function(m,s,l,c){window.__fzErr.push(m+" @"+l+":"+c);var d=document.getElementById("fz-diag");if(d){d.hidden=false;d.textContent="⚠ "+window.__fzErr.join(" | ")};return false};document.addEventListener("DOMContentLoaded",function(){var d=document.getElementById("fz-diag");if(d&&!window.__fzBoot){d.hidden=false;d.textContent="⚠ el script principal no arrancó"+(window.__fzErr.length?": "+window.__fzErr.join(" | "):" (sin error capturado)")}});</script>
@@ -569,7 +569,7 @@ const supaOK=()=>/^https:\/\//.test(SUPA.url);
 const PULL_LIMIT=1000, PUSH_CHUNK=200, MAX_PAYLOAD=8192, REWIND_MS=90000;
 let STATE={v:1,events:[]}, READONLY=false, LOCALMODE=!supaOK(), ONLINE=null, STORAGE_OK=true,
     SYNCED=new Set(), POISON=new Set(), lastPull='1970-01-01T00:00:00+00:00', lastPullId='',
-    pushTimer=null, pullTimer=null, pushing=false, pulling=false, SKEW=0, maxT=0, syncFailNoted=false;
+    pushTimer=null, pullTimer=null, pushing=false, pulling=false, SKEW=0, maxT=0, syncFailNoted=false, SYNC_READY=false, UNL_DIRTY=false;
 const nowMs=()=>Date.now()+SKEW;
 function trackT(e){if(e&&typeof e.t==='number'&&e.t>maxT)maxT=e.t}
 function loadState(){
@@ -715,6 +715,7 @@ async function doPull(){
     }while(rows.length===PULL_LIMIT&&pages<60);
     if(added)STATE.events.sort((a,b)=>a.t-b.t||(a.id<b.id?-1:1));
     const ok=saveCache();
+    SYNC_READY=true;
     if(ok)try{localStorage.setItem(LSPULL,JSON.stringify({ts:lastPull,id:lastPullId}))}catch(e){}
     if(added){invalidate();if(!document.querySelector('#modal-root .mback')&&!MEET)rerender()}
     // el chip solo dice "sincronizado" si tampoco queda nada por subir
@@ -745,7 +746,7 @@ async function reconcile(){
   }catch(e){}
 }
 async function initSupa(){
-  if(!supaOK()){LOCALMODE=true;rerender();return}
+  if(!supaOK()){LOCALMODE=true;SYNC_READY=true;rerender();return}
   await reconcile();
   await doPull();
   schedulePush();
@@ -755,14 +756,14 @@ async function initSupa(){
   });
   addEventListener('online',()=>{schedulePull(300);schedulePush(200)});
   addEventListener('beforeunload',e=>{if(!STORAGE_OK&&pendingEvents().length){e.preventDefault();e.returnValue=''}});
-  rerender();
+  if(!document.querySelector('#modal-root .mback')&&!MEET)rerender();
 }
 function toast(msg,ms=2600){
   const el=document.createElement('div');el.className='toast';el.textContent=msg;
   $('#toast-root').appendChild(el);setTimeout(()=>el.remove(),ms);
 }
 /* ================= MOTOR — deriveState(events, now) ================= */
-let MEMO=null; function invalidate(){MEMO=null}
+let MEMO=null; function invalidate(){MEMO=null;UNL_DIRTY=true}
 function D(){if(!MEMO)MEMO=deriveState(STATE.events,Date.now());return MEMO}
 function estadoAt(g,t){let e='No iniciado';for(const x of g.estadoLog){if(x.t<=t)e=x.v;else break}return e}
 function progresoAt(g,t){let p=0;for(const x of g.progresoLog){if(x.t<=t)p=x.v;else break}return p}
@@ -3262,7 +3263,7 @@ function sanitizeAvatar(c){
 }
 /* ---- desbloqueables: se ganan jugando (nunca se compran); se aplican al dibujar, no solo al guardar ---- */
 const AV_UNLOCKS=[
-  {key:'top:suit',k:'top',v:'suit',n:'Traje de gala',e:'🤵',d:'Completa tu primera meta SMART',t:(d,m,pm)=>[...d.goals.values()].some(g=>g.m===m.id&&g.completedT&&!g.honorClosed&&!g.deleted)},
+  {key:'top:suit',k:'top',v:'suit',n:'Traje de gala',e:'🤵',d:'Completa tu primera meta SMART',t:(d,m,pm)=>[...d.goals.values()].some(g=>g.m===m.id&&g.completedT&&!g.honorClosed)},
   {key:'hat:beret',k:'hat',v:'beret',n:'Boina de artista',e:'🎨',d:'Gana una insignia Rara o mejor',t:(d,m,pm)=>[...pm.badges].some(id=>{const b=BADGES.find(x=>x.id===id);return !!b&&b.r!=='comun'})},
   {key:'hairColor:fun',k:'hairColor',v:AVATAR_OPTS.hairColor[AVATAR_OPTS.hairColor.length-1],n:'Pelo de color',e:'🌈',d:'Una Semana Impecable',t:(d,m,pm)=>(pm.stats.perfectWeeks||0)>=1},
   {key:'hat:straw',k:'hat',v:'straw',n:'Sombrero de paja',e:'👒',d:'4 reuniones selladas contigo presente',t:(d,m,pm)=>[...d.weeks.values()].filter(w=>w.sealed&&(w.sealAtt||[]).includes(m.id)).length>=4},
@@ -3292,25 +3293,33 @@ function avatarFor(d,m){
 /* celebración al ganar un desbloqueo (solo para quien está en sesión; se compara con lo visto en este dispositivo) */
 function checkUnlocks(){
   try{
+    if(!UNL_DIRTY)return;
     const d=D(),m=me();if(!m||!d.fam||document.querySelector('#modal-root .mback')||MEET)return;
     const key='fz-unl-'+location.pathname+'-'+m.id,now=[...avatarUnlocks(d,m.id)];
+    const save=arr=>{try{localStorage.setItem(key,JSON.stringify(arr))}catch(e){}};
     let seen=null;try{seen=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}
-    if(!Array.isArray(seen)){try{localStorage.setItem(key,JSON.stringify(now))}catch(e){}return}
+    if(!Array.isArray(seen)){if(SYNC_READY){save(now);UNL_DIRTY=false}return}
+    const lost=seen.filter(k=>!now.includes(k));
+    if(lost.length){seen=seen.filter(k=>now.includes(k));save(seen);const names=lost.map(k=>AV_UNLOCKS.find(u=>u.key===k)).filter(Boolean).map(u=>u.e+' '+u.n).join(', ');if(names)toast('Tu avatar cambió: '+names+' ya no está disponible',3600)}
     const fresh=now.filter(k=>!seen.includes(k));
+    UNL_DIRTY=false;
     if(!fresh.length)return;
-    try{localStorage.setItem(key,JSON.stringify(now))}catch(e){}
     const items=fresh.map(k=>AV_UNLOCKS.find(u=>u.key===k)).filter(Boolean);
+    const ack=()=>save(now);
     confetti(90);chime('up');
     const mb=modal(`<div style="text-align:center"><div style="font-size:3rem">🎁</div><h3>¡Nuevo desbloqueo para tu avatar!</h3>
       <div class="vgap" style="margin-top:10px">${items.map(u=>`<div class="row small" style="justify-content:center;gap:8px"><span style="font-size:1.4rem">${u.e}</span><b>${esc(u.n)}</b><span class="muted">· ${esc(u.d)}</span></div>`).join('')}</div>
-      <button class="btn small" id="unl-go" style="margin-top:14px">🎨 Ponérmelo</button></div>`);
-    $('#unl-go',mb).onclick=()=>{mb.remove();avatarEditor(m.id)};
+      <div class="row" style="justify-content:center;gap:8px;margin-top:14px"><button class="btn small" id="unl-go">🎨 Ponérmelo</button><button class="btn small sec" id="unl-later">Luego</button></div></div>`,ack);
+    mb.classList.add('sticky');
+    $('#unl-go',mb).onclick=()=>{ack();mb.remove();avatarEditor(m.id,Object.fromEntries(items.map(u=>[u.k,u.v])))};
+    $('#unl-later',mb).onclick=()=>{ack();mb.remove()};
   }catch(e){}
 }
-function avatarEditor(mid){
+function avatarEditor(mid,preset){
   const d=D(),m=d.members.get(mid);if(!m)return;
   let cfg=m.avatar?Object.assign(avatarDefault(),avatarFor(d,m)):avatarDefault();
   const unl=avatarUnlocks(d,mid);
+  if(preset&&typeof preset==='object'){for(const[k,v]of Object.entries(preset)){if(AV_KEYS.includes(k)&&(AVATAR_OPTS[k]||[]).includes(v)&&!avLockOf(d,mid,k,v))cfg[k]=v}if(!['shirt','suit'].includes(cfg.top))cfg.tie=false}
   const mb=modal(`<div class="row between"><h3>🎨 Mi avatar</h3><button class="chip" id="av-close" aria-label="Cerrar">✕</button></div>
     <div class="row" style="gap:14px;margin-top:10px;align-items:center">
       <div id="av-prev"></div>
@@ -3331,8 +3340,8 @@ function avatarEditor(mid){
       const opts=AVATAR_OPTS[k]||[];
       if(k==='topColor'&&cfg.top==='suit'&&false)return '';
       const items=opts.map(v=>swatchKeys.includes(k)
-        ?(()=>{const lk=avLockOf(d,mid,k,v);return `<button class="avsw ${cfg[k]===v?'on':''} ${lk?'locked':''}" data-k="${k}" data-v="${esc(v)}" ${lk?`data-lock="${esc(lk.d)}"`:''} style="background:${esc(v)}" title="${esc(lk?avLabel(k,v)+' · 🔒 '+lk.d:avLabel(k,v))}" aria-label="${esc(avLabel(k,v))}" aria-pressed="${cfg[k]===v}">${lk?'🔒':''}</button>`})()
-        :(()=>{const lk=avLockOf(d,mid,k,v);return `<button class="avopt ${cfg[k]===v?'on':''} ${lk?'locked':''}" data-k="${k}" data-v="${esc(v)}" ${lk?`data-lock="${esc(lk.d)}"`:''} title="${esc(lk?avLabel(k,v)+' · 🔒 '+lk.d:avLabel(k,v))}" aria-pressed="${cfg[k]===v}">${lk?'<span class="avlock">🔒</span>':''}${avatarSvg(Object.assign({},cfg,{[k]:v}),{size:46,head:!['top','topColor'].includes(k),bg:'#F3F1EA'})}<span class="tiny">${esc(avLabel(k,v))}</span></button>`})()).join('');
+        ?(()=>{const lk=avLockOf(d,mid,k,v);return `<button class="avsw ${cfg[k]===v?'on':''} ${lk?'locked':''}" data-k="${k}" data-v="${esc(v)}" ${lk?`data-lock="${esc(lk.d)}" aria-disabled="true" aria-label="${esc(avLabel(k,v))} · bloqueado: ${esc(lk.d)}"`:`aria-label="${esc(avLabel(k,v))}" aria-pressed="${cfg[k]===v}"`} style="background:${esc(v)}" title="${esc(lk?avLabel(k,v)+' · 🔒 '+lk.d:avLabel(k,v))}">${lk?'🔒':''}</button>`})()
+        :(()=>{const lk=avLockOf(d,mid,k,v);return `<button class="avopt ${cfg[k]===v?'on':''} ${lk?'locked':''}" data-k="${k}" data-v="${esc(v)}" ${lk?`data-lock="${esc(lk.d)}" aria-disabled="true" aria-label="${esc(avLabel(k,v))} · bloqueado: ${esc(lk.d)}"`:`aria-pressed="${cfg[k]===v}"`} title="${esc(lk?avLabel(k,v)+' · 🔒 '+lk.d:avLabel(k,v))}">${lk?'<span class="avlock">🔒</span>':''}${avatarSvg(Object.assign({},cfg,{[k]:v}),{size:46,head:!['top','topColor'].includes(k),bg:'#F3F1EA'})}<span class="tiny">${esc(avLabel(k,v))}</span></button>`})()).join('');
       const extra=k==='eyes'?`<label class="row small" style="gap:6px;margin-top:6px"><input type="checkbox" id="av-freckles" ${cfg.freckles?'checked':''} style="width:auto">Pecas</label>`:k==='top'?`<label class="row small" style="gap:6px;margin-top:6px"><input type="checkbox" id="av-tie" ${cfg.tie?'checked':''} ${['shirt','suit'].includes(cfg.top)?'':'disabled'} style="width:auto">Corbata <span class="tiny muted">(con camisa o traje)</span></label>`:'';
       return `<div style="margin-top:12px" role="group" aria-label="${esc(AV_TITLES[k]||k)}"><div class="eyebrow">${AV_TITLES[k]||k}</div><div class="${swatchKeys.includes(k)?'row':'avgrid'}" style="${swatchKeys.includes(k)?'gap:8px;flex-wrap:wrap;margin-top:6px':''}">${items}</div>${extra}</div>`;
     }).join('');
@@ -3341,6 +3350,7 @@ function avatarEditor(mid){
     const ti=$('#av-tie',rows);if(ti)ti.onchange=()=>{cfg.tie=ti.checked;paintPrev()};
   };
   paintPrev();paintRows();
+  if(preset&&typeof preset==='object'){const e0=Object.entries(preset)[0];if(e0){try{const el=rows.querySelector(`[data-k="${e0[0]}"][data-v="${CSS.escape(e0[1])}"]`);if(el)setTimeout(()=>el.scrollIntoView({block:'center'}),80)}catch(e){}}}
   $('#av-close',mb).onclick=()=>mb.remove();
   $('#av-rand',mb).onclick=()=>{cfg=stripLocked(d,mid,Object.assign(avatarDefault(),avatarRandom(uid())));paintPrev();paintRows()};
   const ae=$('#av-emoji',mb);if(ae)ae.onclick=()=>{appendEvents([{type:'member.update',m:mid,by:SESSION,patch:{avatar:null}}]);mb.remove();toast('Vuelves a tu emoji '+m.emoji)};
@@ -4593,6 +4603,7 @@ function runTests(){
       {id:'av',t:ts(day,13),type:'member.update',m:'M1',by:'M1',patch:{avatar:{hat:'crown',glasses:'sun',top:'suit',hairColor:AVATAR_OPTS.hairColor[AVATAR_OPTS.hairColor.length-1]}}}];
     const d=mkFam(evs),U=avatarUnlocks(d,'M1');
     ok('T17 la primera meta desbloquea el traje y nada más',U.has('top:suit')&&U.size===1,[...U].join(','));
+    ok('T17 borrar la meta no quita el traje ganado',avatarUnlocks(mkFam([...evs,{id:'gx',t:ts(day,14),type:'goal.delete',gid:'G1'}]),'M1').has('top:suit'));
     const eff=avatarFor(d,d.members.get('M1'));
     ok('T17 lo bloqueado no se dibuja aunque venga en el evento',eff.top==='suit'&&eff.hat==='none'&&eff.glasses==='none'&&eff.hairColor!==AVATAR_OPTS.hairColor[AVATAR_OPTS.hairColor.length-1],JSON.stringify(eff));
     ok('T17 el avatar guardado sigue intacto (solo se filtra al dibujar)',d.members.get('M1').avatar.hat==='crown');
