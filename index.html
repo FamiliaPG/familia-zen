@@ -487,6 +487,7 @@ const CATS={
   social:{n:'Social',e:'🤝',c:'#C25E72'},
   profesional:{n:'Profesional',e:'💼',c:'#35597F'},
   sueno:{n:'Sueño',e:'🌙',c:'#5A6BA8'},
+  finanzas:{n:'Finanzas',e:'💰',c:'#1F7A63'},
   otro:{n:'Otro',e:'✨',c:'#7E8A80'},
 };
 const CAT_IDS=Object.keys(CATS);
@@ -513,6 +514,7 @@ const SENDAS={
   social:['Cercano','Tejedor','Puente','Corazón Abierto'],
   profesional:['Diligente','Artesano','Experto','Maestro de Oficio'],
   sueno:['Descansado','Nocturno Sabio','Guardián del Sueño','Soñador Sereno'],
+  finanzas:['Ahorrador','Previsor','Estratega','Maestro del Sustento'],
   otro:['Curioso','Explorador','Pionero','Renacentista'],
 };
 const sendaTitle=(cat,L)=>{const t=SENDAS[cat]||SENDAS.otro;return L>=20?t[3]:L>=10?t[2]:L>=5?t[1]:L>=1?t[0]:null};
@@ -795,7 +797,7 @@ function deriveState(events,now){
     case 'act.sched': D.acts.set(e.aid,{aid:e.aid,m:e.m,goalId:e.goalId||null,cat:e.cat,title:e.title,tier:e.tier,date:e.date,time:e.time||null,end:(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null,notes:e.notes?String(e.notes).slice(0,300):'',grp:e.grp||null,schedT:e.t,rescheduled:false,done:null,voided:false,canceled:false,evId:e.id});break;
     case 'act.resched': {const a=D.acts.get(e.aid);if(a&&!a.done){a.date=e.date;a.time=e.time||a.time;if('end' in e)a.end=(e.end&&/^\d{1,2}:\d{2}$/.test(e.end))?e.end:null;if('notes' in e)a.notes=e.notes?String(e.notes).slice(0,300):'';a.rescheduled=true;a.reschedT=e.t}break}
     case 'act.min': {const a=D.acts.get(e.aid);if(a&&!a.done){a.tier='T1';if(e.title)a.title=e.title}break}
-    case 'act.cancel': {const a=D.acts.get(e.aid);if(a&&!a.done)a.canceled=true;break}
+    case 'act.cancel': {if(e.grp){D.acts.forEach(x=>{if(x.grp===e.grp&&!x.done&&(!e.from||x.date>=e.from))x.canceled=true});break}const a=D.acts.get(e.aid);if(a&&!a.done)a.canceled=true;break}
     case 'act.done': {const a=D.acts.get(e.aid);if(a&&!a.done)a.done={t:e.t,kpi:e.kpi??null,note:e.note||'',evId:e.id};break}
     case 'act.undo': {const a=D.acts.get(e.aid);if(a&&a.done&&!a.voided)a.done=null;break}
     case 'garden.move': gardenPos.set(e.m,String(e.area||'').slice(0,20));break;
@@ -1543,6 +1545,7 @@ function actCard(a,d){
         ${g?`<span title="Vinculada a meta">🎯 ${esc((g.f.objetivo||g.f.smartFinal||'Meta').slice(0,24))}</span>`:''}
         ${improvised?'<span title="No planificada con antelación">⚡ improvisada · 50%</span>':''}
         ${a.rescheduled?'<span>↻ 70%</span>':''}
+        ${a.grp?'<span title="Parte de una serie repetida">🔁</span>':''}
         ${done?`<b class="gold num">+${a._pts??''} pts</b>`:''}
         ${a._chest?`<span title="¡Cofre de constancia!">🎁</span>`:''}
       </div>
@@ -1656,11 +1659,44 @@ function downloadIcs(a){
   const l=document.createElement('a');l.href=u;l.download=fn+'.ics';document.body.appendChild(l);l.click();
   setTimeout(()=>{URL.revokeObjectURL(u);l.remove()},2000);
 }
+/* ---------- series repetidas: eliminar una, las siguientes o todas ---------- */
+function seriesPending(d,a){
+  if(!a.grp)return [a];
+  const l=[...d.acts.values()].filter(x=>x.grp===a.grp&&!x.done&&!x.canceled).sort((x,y)=>x.date<y.date?-1:1);
+  return l.length?l:[a];
+}
+function delActivity(a,onDone){
+  if(READONLY)return toast('Vista de solo lectura');
+  const d=D(),sib=seriesPending(d,a),done=()=>{if(onDone)onDone()};
+  if(sib.length<2){
+    if(confirm('¿Eliminar esta actividad?')){appendEvents([{type:'act.cancel',aid:a.aid}]);done();toast('Actividad eliminada')}
+    return;
+  }
+  const fut=sib.filter(x=>x.date>=a.date),all=sib.length,isFirst=fut.length===all;
+  const mb=modal(`<h3>🔁 Esta actividad se repite</h3>
+    <p class="small muted" style="margin-top:6px">${esc(a.title)} · <b>${all}</b> pendientes, de ${fmtDate(sib[0].date)} a ${fmtDate(sib[all-1].date)}.</p>
+    <p class="small" style="margin-top:8px">¿Qué quieres eliminar?</p>
+    <div class="vgap" style="margin-top:10px">
+      <button class="btn big sec" id="dl-one" style="color:var(--clay)"><span>Eliminar solo esta · ${fmtDate(a.date)}</span></button>
+      ${!isFirst&&fut.length>1?`<button class="btn big sec" id="dl-fut" style="color:var(--clay)"><span>Eliminar esta y las siguientes · ${fut.length}</span></button>`:''}
+      <button class="btn big sec" id="dl-all" style="color:var(--clay)"><span>Eliminar toda la serie · ${all}</span></button>
+      <button class="btn big ghost" id="dl-x"><span>Conservar todo</span></button>
+    </div>
+    <p class="tiny muted" style="margin-top:10px">Las que ya completaste se conservan siempre — nunca se pierden sus puntos.</p>`);
+  const go=(ev,msg)=>{appendEvents([ev]);mb.remove();done();toast(msg)};
+  const q=(s,f)=>{const b=$(s,mb);if(b)b.onclick=f};
+  q('#dl-one',()=>go({type:'act.cancel',aid:a.aid},'Actividad eliminada'));
+  q('#dl-fut',()=>go({type:'act.cancel',grp:a.grp,from:a.date},`Eliminadas ${fut.length} actividades`));
+  q('#dl-all',()=>go({type:'act.cancel',grp:a.grp},`Eliminada la serie · ${all} actividades`));
+  q('#dl-x',()=>mb.remove());
+}
 function actDetail(a){
   const d=D(),m=d.members.get(a.m),g=a.goalId?d.goals.get(a.goalId):null;
   const done=a.done&&!a.voided;
+  const sib=a.grp?seriesPending(d,a):[];
   const mb=modal(`<div class="row">${avatarHtml(m,40)}<div class="grow"><b>${esc(a.title)}</b><div class="tiny muted">${fmtDate(a.date)} ${a.time?'· '+a.time+(a.end?'–'+a.end:''):''}</div></div>${catChip(a.cat)}</div>
     <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap">${tierBadge(a.tier)}
+      ${sib.length>1?`<span class="chip" title="Forma parte de una serie repetida">🔁 Serie · ${sib.length} pendientes</span>`:(a.grp?`<span class="chip" title="Forma parte de una serie repetida">🔁 Serie</span>`:``)}
       ${done?`<span class="chip gold">+${a._pts} pts</span><span class="chip">×${(a._M||1).toFixed(2)}</span>${a._dr<1?`<span class="chip">rend. ${Math.round((a._dr||1)*100)}%</span>`:''}${a._evidDown?'<span class="chip">sin evidencia → Rama</span>':''}`:''}
       ${a.voided?'<span class="chip" style="color:var(--clay)">anulada</span>':''}</div>
     ${a.notes?`<p class="small" style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:10px">📝 ${esc(a.notes)}</p>`:''}
@@ -1675,7 +1711,7 @@ function actDetail(a){
     </div>`);
   const q=(s,f)=>{const b=$(s,mb);if(b)b.onclick=f};
   q('#ad-move',()=>{mb.remove();schedModal({edit:a})});
-  q('#ad-del',()=>{if(confirm('¿Eliminar esta actividad?')){appendEvents([{type:'act.cancel',aid:a.aid}]);mb.remove()}});
+  q('#ad-del',()=>delActivity(a,()=>mb.remove()));
   q('#ad-gcal',()=>window.open(gcalUrl(a),'_blank'));
   q('#ad-ics',()=>downloadIcs(a));
   q('#ad-undo',()=>{
@@ -1708,6 +1744,7 @@ function schedModal({date,edit,goalId,cat}={}){
   const dateV=edit?edit.date:(date||d.todayK);
   const tplOpts=g=>g?g.actions.map((x,i)=>`<button class="chip" data-tpl="${i}">${esc(x.title.slice(0,28))} · ${CONFIG.TIER_NAMES[x.tier]||x.tier}</button>`).join(''):'';
   const mb=modal(`<h3>${edit?'Editar actividad':'Planificar actividad'}</h3>
+    ${edit&&edit.grp?'<p class="tiny muted" style="margin-top:6px">🔁 Forma parte de una serie repetida — los cambios afectan <b>solo a este día</b>.</p>':''}
     <label class="field"><span class="lab">Meta vinculada <span class="gold">(+25%)</span></span>
       <select id="s-goal"><option value="">— Sin meta (máx. 4/día) —</option>
       ${goals.map(g=>`<option value="${g.gid}" ${g.gid===selGoal?'selected':''}>${CATS[g.f.area].e} ${esc((g.f.objetivo||g.f.smartFinal||'Meta').slice(0,40))}</option>`).join('')}</select></label>
@@ -2136,9 +2173,12 @@ const SMART_EX={
   sueno:[
     'Antes de 3 semanas, lograré acostarme a las 10:30 pm entre semana, medido con el registro de sueño del teléfono, apagando pantallas a las 10 pm, porque dormir bien es la base de todo lo demás.',
     'Antes de fin de mes, lograré dormir 7+ horas 5 noches por semana, medido con la app de sueño, adelantando mi rutina nocturna 30 minutos, porque descansado soy mi mejor versión.'],
+  finanzas:[
+    'Antes del 30 de junio, lograré tener $1,000 en mi fondo de emergencia, medido con el balance de la cuenta de ahorros, transfiriendo $85 cada quincena el mismo día que entra el pago, porque quiero que un imprevisto no se convierta en una crisis para mi familia.',
+    'Antes de 6 meses, lograré saldar los $1,200 de la tarjeta de crédito, medido por el balance del estado de cuenta cada mes, pagando $200 mensuales y dejando de usarla para gastos no esenciales, porque ese dinero rinde mucho más en nuestras metas que en intereses.'],
   otro:[
     'Antes del 20 de diciembre, lograré ordenar y donar lo que no uso del clóset, medido por 3 bolsas donadas, dedicando 30 minutos cada sábado, porque un espacio ligero me da paz.',
-    'Antes de 2 meses, lograré ahorrar $200 para el fondo familiar, medido con el balance de la cuenta, transfiriendo $25 cada viernes de pago, porque quiero seguridad y tranquilidad para los míos.'],
+    'Antes de 3 meses, lograré tocar 5 canciones completas en la guitarra, medido por las que puedo tocar de memoria sin parar, practicando 20 minutos martes, jueves y sábados, porque quiero un espacio creativo que sea solo mío.'],
 };
 function showSmartExamples(){
   const secs=CAT_IDS.filter(c=>SMART_EX[c]).map(c=>{const k=CATS[c];
@@ -2171,7 +2211,7 @@ function renderGuia(main,d){
       <div class="row" style="gap:12px;align-items:center">
         <span style="font-size:1.6rem;flex:none">💡</span>
         <div class="grow"><b>Ver ejemplos por categoría</b>
-          <p class="tiny muted" style="margin:3px 0 0">Dos SMART Goals listos por cada categoría · 🌿🏃📖🥗🧘🎓🕊️🤝💼🌙✨</p></div>
+          <p class="tiny muted" style="margin:3px 0 0">Dos SMART Goals listos por cada categoría · ${CAT_IDS.map(c=>CATS[c].e).join('')}</p></div>
         <span aria-hidden="true" style="font-size:1.25rem;font-weight:800;color:var(--verde-ink);flex:none">→</span>
       </div>
     </button>
@@ -3383,7 +3423,7 @@ const KIND_META={semana:{e:'📮',t:'Postal de la semana'},meta:{e:'🏆',t:'Pos
 const kindOk=k=>Object.prototype.hasOwnProperty.call(KIND_META,k);
 const WORDS_Q=[['f1','Lo que logramos','Ej. la meta familiar y una meta SMART cumplida'],['f2','Lo que aprendimos','Ej. que planificar el domingo hace que se cumpla'],['f3','Para una familia que empieza','Ej. una sola actividad Semilla por persona']];
 const ADVICE=['Empiecen con una sola actividad Semilla por persona.','Planifiquen el domingo, juntos y en voz alta.','Celebren lo pequeño: cada actividad cuenta.','Un día de descanso planificado no rompe la racha.','Mover una actividad de día no es fallar: es seguir.','Pongan la actividad del día donde la vean: en la mesa, en la puerta.','Empiecen por lo fácil y dejen que la racha haga el resto.'];
-const SENT_BY_CAT={ejercicio:'En casa nos movemos.',lectura:'En casa leemos todos los días.',meditacion:'Somos una familia que respira.',salud:'Cuidamos nuestra salud, juntos.',nutricion:'En casa comemos con conciencia.',espiritual:'Somos una familia con raíces.',social:'Somos una familia que se cuida entre sí.',cursos:'Somos una familia que sigue aprendiendo.',profesional:'Trabajamos con propósito.',sueno:'En casa descansamos bien.',otro:'Poco a poco se anda lejos.'};
+const SENT_BY_CAT={ejercicio:'En casa nos movemos.',lectura:'En casa leemos todos los días.',meditacion:'Somos una familia que respira.',salud:'Cuidamos nuestra salud, juntos.',nutricion:'En casa comemos con conciencia.',espiritual:'Somos una familia con raíces.',social:'Somos una familia que se cuida entre sí.',cursos:'Somos una familia que sigue aprendiendo.',profesional:'Trabajamos con propósito.',sueno:'En casa descansamos bien.',finanzas:'En casa cuidamos lo que ganamos.',otro:'Poco a poco se anda lejos.'};
 function refCodeOf(fam){
   if(!fam)return '';
   const own=String(fam.refCode||'').toUpperCase();
@@ -4616,6 +4656,44 @@ function runTests(){
       &&rule('hat:crown').t(d,m,fake({badges:new Set(['kensho'])}))&&!rule('hat:crown').t(d,m,fake({badges:new Set(['montanabadge'])})));
     const W1=addDays(W0,-7),sealed=evs.map(e=>(e.type==='family.create'||e.type==='member.join')?Object.assign({},e,{t:ts(W1,0)}):e);for(let i=0;i<4;i++)sealed.push({id:'sl'+i,t:ts(addDays(W1,7*i+6),19),type:'meeting.seal',week:addDays(W1,7*i),att:['M1']});
     ok('T17 4 reuniones selladas → sombrero de paja',avatarUnlocks(mkFam(sealed),'M1').has('hat:straw')&&!avatarUnlocks(d,'M1').has('hat:straw'));
+  }
+  // T18: eliminar una serie repetida (act.cancel por grupo)
+  {
+    const ks=[0,1,2,3].map(i=>addDays(addDays(W0,1),7*i));
+    const evs=[...base];
+    ks.forEach((k,i)=>evs.push({id:'r'+i,t:ts(W0,8),type:'act.sched',aid:'r'+i,m:'M1',cat:'ejercicio',title:'Correr',tier:'T2',date:k,grp:'G9'}));
+    evs.push({id:'rd',t:ts(ks[0],10),type:'act.done',aid:'r0'});
+    const d1=mkFam(evs);
+    ok('T18 la serie repetida comparte grupo',[...d1.acts.values()].filter(a=>a.grp==='G9').length===4);
+    const dOne=mkFam([...evs,{id:'rc',t:ts(ks[1],11),type:'act.cancel',aid:'r1'}]);
+    ok('T18 «solo esta» no toca al resto de la serie',dOne.acts.get('r1').canceled&&!dOne.acts.get('r2').canceled&&!dOne.acts.get('r3').canceled);
+    const dFut=mkFam([...evs,{id:'rc',t:ts(ks[1],11),type:'act.cancel',grp:'G9',from:ks[2]}]);
+    ok('T18 «esta y las siguientes» borra desde la fecha en adelante',!dFut.acts.get('r1').canceled&&dFut.acts.get('r2').canceled&&dFut.acts.get('r3').canceled);
+    const dAll=mkFam([...evs,{id:'rc',t:ts(ks[1],11),type:'act.cancel',grp:'G9'}]);
+    ok('T18 «toda la serie» borra todas las pendientes',dAll.acts.get('r1').canceled&&dAll.acts.get('r2').canceled&&dAll.acts.get('r3').canceled);
+    ok('T18 lo ya completado nunca se borra ni pierde puntos',dAll.acts.get('r0').canceled===false&&!!dAll.acts.get('r0').done&&dAll.acts.get('r0')._pts>0,'pts='+dAll.acts.get('r0')._pts);
+    const dOther=mkFam([...evs,{id:'ro',t:ts(W0,9),type:'act.sched',aid:'r9',m:'M1',cat:'ejercicio',title:'Otra',tier:'T2',date:ks[3],grp:'G8'},{id:'rc',t:ts(ks[1],11),type:'act.cancel',grp:'G9'}]);
+    ok('T18 borrar una serie no afecta a otras',!dOther.acts.get('r9').canceled);
+    ok('T18 seriesPending devuelve solo lo pendiente y ordenado',(()=>{const l=seriesPending(d1,d1.acts.get('r1'));return l.length===3&&l[0].aid==='r1'&&l[2].aid==='r3'})());
+  }
+  // T19: catálogo de categorías completo (cada categoría necesita senda, ejemplos y frase de postal)
+  {
+    const falta=(m)=>CAT_IDS.filter(c=>!m[c]);
+    ok('T19 toda categoría tiene senda',falta(SENDAS).length===0,falta(SENDAS).join(','));
+    ok('T19 toda categoría tiene 2 ejemplos SMART',CAT_IDS.every(c=>SMART_EX[c]&&SMART_EX[c].length===2),falta(SMART_EX).join(','));
+    ok('T19 toda categoría tiene frase de postal',falta(SENT_BY_CAT).length===0,falta(SENT_BY_CAT).join(','));
+    ok('T19 toda senda tiene 4 títulos',CAT_IDS.every(c=>SENDAS[c].length===4));
+    ok('T19 nombres, emojis y colores únicos',
+      new Set(CAT_IDS.map(c=>CATS[c].e)).size===CAT_IDS.length
+      &&new Set(CAT_IDS.map(c=>CATS[c].c.toLowerCase())).size===CAT_IDS.length
+      &&CAT_IDS.every(c=>/^#[0-9a-f]{6}$/i.test(CATS[c].c)));
+    ok('T19 «Rueda Completa» exige todas las categorías de la semana',
+      BADGES.find(b=>b.id==='ruedacompleta').t({weekCatsMax:CAT_IDS.length})&&!BADGES.find(b=>b.id==='ruedacompleta').t({weekCatsMax:CAT_IDS.length-1}));
+    ok('T19 finanzas existe y puntúa como cualquier otra',(()=>{
+      const day=addDays(W0,1);
+      const d=mkFam([...base,{id:'x1',t:ts(W0,8),type:'act.sched',aid:'xa',m:'M1',cat:'finanzas',title:'Revisar presupuesto',tier:'T2',date:day},
+        {id:'x2',t:ts(day,10),type:'act.done',aid:'xa'}]);
+      return !!CATS.finanzas&&d.acts.get('xa')._pts>0&&sendaTitle('finanzas',1)==='Ahorrador'})());
   }
   const passN=T.filter(t=>t.pass).length;
   $('#main').innerHTML=`<div class="vgap"><h1>Pruebas del motor · ${passN}/${T.length}</h1>
